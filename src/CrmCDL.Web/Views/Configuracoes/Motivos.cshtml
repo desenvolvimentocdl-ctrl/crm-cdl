@@ -1,0 +1,21 @@
+@model List<MotivoPerda>
+@{ ViewData["Title"] = "Motivos de perda"; }
+@await Html.PartialAsync("_Abas", "motivos")
+<div class="pagina pilha" style="max-width:640px">
+    <p class="muted" style="margin:0">Aparecem quando um lead é movido para "Venda perdida" e alimentam o painel.</p>
+    <div class="card card-pad pilha">
+        @foreach (var m in Model)
+        {
+            <form method="post" asp-antiforgery="true" action="/configuracoes/motivos" class="linha" style="flex-wrap:nowrap">
+                <input type="hidden" name="id" value="@m.Id">
+                <input name="nome" value="@m.Nome" required>
+                <button class="btn sm">Salvar</button>
+                <button class="btn sm perigo" name="excluir" value="true" formnovalidate onclick="return confirm('Excluir este motivo?')">Excluir</button>
+            </form>
+        }
+        <form method="post" asp-antiforgery="true" action="/configuracoes/motivos" class="linha" style="flex-wrap:nowrap">
+            <input name="nome" placeholder="Novo motivo" required>
+            <button class="btn pri sm"><svg><use href="#i-mais"/></svg>Adicionar</button>
+        </form>
+    </div>
+</div>

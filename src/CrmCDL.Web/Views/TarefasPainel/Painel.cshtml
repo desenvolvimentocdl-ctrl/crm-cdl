@@ -1,0 +1,58 @@
+@model PainelVm
+@{
+    ViewData["Title"] = "Painel";
+    var conversao = Model.Ganhos + Model.Perdidos == 0 ? 0 : Model.Ganhos * 100.0 / (Model.Ganhos + Model.Perdidos);
+    var maxEtapa = Math.Max(1, Model.PorEtapa.Count == 0 ? 1 : Model.PorEtapa.Max(x => x.Qtd));
+    var maxMotivo = Math.Max(1, Model.Motivos.Count == 0 ? 1 : Model.Motivos.Max(x => x.Qtd));
+}
+<header class="topo">
+    <h1>Painel comercial</h1>
+    <form method="get" class="filtros">
+        <select name="funil" aria-label="Funil" style="width:auto">@foreach (var f in Model.Funis) { <option value="@f.Id" selected="@(f.Id == Model.Funil.Id)">@f.Nome</option> }</select>
+        <label class="sr" for="de">De</label><input id="de" type="date" name="de" value="@Model.Inicio.ToString("yyyy-MM-dd")" style="width:auto">
+        <label class="sr" for="ate">Até</label><input id="ate" type="date" name="ate" value="@Model.Fim.ToString("yyyy-MM-dd")" style="width:auto">
+        <button class="btn">Aplicar</button>
+    </form>
+</header>
+<div class="pagina">
+    <div class="kpis">
+        <div class="kpi destaque"><div class="l">Vendas ganhas</div><div class="v">@Model.Ganhos</div><div class="s">@Hora.Dinheiro(Model.ValorGanho) no período</div></div>
+        <div class="kpi"><div class="l">Novos leads</div><div class="v">@Model.Novos</div><div class="s">criados no período</div></div>
+        <div class="kpi"><div class="l">Conversão</div><div class="v">@conversao.ToString("0")%</div><div class="s">@Model.Ganhos ganhos · @Model.Perdidos perdidos</div></div>
+        <div class="kpi"><div class="l">Em aberto</div><div class="v">@Model.EmAberto</div><div class="s">@Hora.Dinheiro(Model.ValorAberto) em negociação</div></div>
+        <div class="kpi"><div class="l">Tarefas atrasadas</div><div class="v" style="color:@(Model.TarefasAtrasadas > 0 ? "var(--erro)" : "inherit")">@Model.TarefasAtrasadas</div><div class="s">neste funil</div></div>
+    </div>
+    <div class="dois">
+        <section class="secao">
+            <h3>Leads em aberto por etapa</h3>
+            <div class="barras">
+                @foreach (var (e, qtd, valor) in Model.PorEtapa)
+                {
+                    <div class="barra"><span class="nome" title="@e.Nome">@e.Nome</span><div class="trilho"><div class="enche" style="width:@((qtd * 100.0 / maxEtapa).ToString("0.#", System.Globalization.CultureInfo.InvariantCulture))%"></div></div><span class="val">@qtd · @Hora.Dinheiro(valor)</span></div>
+                }
+            </div>
+        </section>
+        <section class="secao">
+            <h3>Motivos de perda</h3>
+            @if (Model.Motivos.Count == 0) { <p class="muted" style="margin:0">Nenhuma perda no período.</p> }
+            <div class="barras">
+                @foreach (var (motivo, qtd) in Model.Motivos)
+                {
+                    <div class="barra" style="grid-template-columns:1fr 1fr 40px"><span class="nome" title="@motivo">@motivo</span><div class="trilho"><div class="enche" style="background:var(--navy-2);width:@((qtd * 100.0 / maxMotivo).ToString("0.#", System.Globalization.CultureInfo.InvariantCulture))%"></div></div><span class="val">@qtd</span></div>
+                }
+            </div>
+        </section>
+    </div>
+    <section class="card rolavel" style="margin-top:16px;overflow:hidden">
+        <table class="tabela">
+            <thead><tr><th>Responsável</th><th>Em aberto</th><th>Ganhos</th><th>Perdidos</th><th>Valor ganho</th><th>Tarefas atrasadas</th></tr></thead>
+            <tbody>
+            @if (Model.PorResponsavel.Count == 0) { <tr><td colspan="6" class="vazio">Sem movimento no período.</td></tr> }
+            @foreach (var r in Model.PorResponsavel)
+            {
+                <tr><td><span class="nome"><span class="av sm">@Texto.Iniciais(r.Nome)</span>@r.Nome</span></td><td class="num">@r.Abertos</td><td class="num">@r.Ganhos</td><td class="num">@r.Perdidos</td><td class="num">@Hora.Dinheiro(r.Valor)</td><td class="num" style="color:@(r.Atrasadas > 0 ? "var(--erro)" : "inherit")">@r.Atrasadas</td></tr>
+            }
+            </tbody>
+        </table>
+    </section>
+</div>

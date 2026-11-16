@@ -1,0 +1,9 @@
+@model string
+<header class="topo"><h1>Configurações</h1></header>
+<nav class="sub-abas">
+    <a href="/configuracoes/funis" class="@(Model == "funis" ? "on" : "")">Funis e etapas</a>
+    <a href="/configuracoes/campos" class="@(Model == "campos" ? "on" : "")">Campos</a>
+    <a href="/configuracoes/usuarios" class="@(Model == "usuarios" ? "on" : "")">Usuários</a>
+    <a href="/configuracoes/motivos" class="@(Model == "motivos" ? "on" : "")">Motivos de perda</a>
+    <a href="/configuracoes/kommo" class="@(Model == "kommo" ? "on" : "")">Importar da Kommo</a>
+</nav>

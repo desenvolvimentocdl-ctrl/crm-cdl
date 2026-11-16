@@ -1,0 +1,198 @@
+@model LeadVm
+@{
+    var l = Model.Lead;
+    ViewData["Title"] = l.Titulo;
+    var idxAtual = Model.Etapas.FindIndex(e => e.Id == l.EtapaId);
+    var agora = DateTime.UtcNow;
+    var principalContato = l.Contatos.OrderByDescending(c => c.Principal).FirstOrDefault()?.Contato;
+    string Whats(string? fone)
+    {
+        var d = new string((fone ?? "").Where(char.IsDigit).ToArray()).TrimStart('0');
+        return "https://wa.me/" + (d.StartsWith("55") && d.Length >= 12 ? d : "55" + d);
+    }
+}
+<div class="lead-cab">
+    <div class="linha1">
+        <a class="ico-btn" href="/leads?funil=@l.FunilId" title="Voltar ao funil" aria-label="Voltar ao funil"><svg><use href="#i-voltar"/></svg></a>
+        <h1>@l.Titulo</h1>
+        @if (l.Etapa!.Tipo == TipoEtapa.Ganho) { <span class="pill ok">Venda ganha</span> }
+        @if (l.Etapa.Tipo == TipoEtapa.Perdido) { <span class="pill erro">Perdido@(l.MotivoPerda is null ? "" : " · " + l.MotivoPerda.Nome)</span> }
+        <span style="margin-left:auto" class="num">@Hora.Dinheiro(l.Valor)</span>
+    </div>
+    <div class="meta">@l.Funil!.Nome · criado @Hora.Relativa(l.CriadoEm) · atualizado @Hora.Relativa(l.AtualizadoEm) · #@l.Id</div>
+    <div class="etapas-barra" role="list" aria-label="Etapas do funil">
+        @for (var i = 0; i < Model.Etapas.Count; i++)
+        {
+            var e = Model.Etapas[i];
+            if (e.Tipo == TipoEtapa.Entrada && e.Id != l.EtapaId) { continue; }
+            var cls = e.Id == l.EtapaId ? "atual" : (i < idxAtual && !l.Etapa.Fechada && !e.Fechada) ? "feita" : "";
+            if (e.Tipo == TipoEtapa.Ganho) { cls += " ganho"; }
+            if (e.Tipo == TipoEtapa.Perdido) { cls += " perdido"; }
+            <form method="post" asp-antiforgery="true" action="/leads/@l.Id/etapa" class="@cls" role="listitem" data-perda="@(e.Tipo == TipoEtapa.Perdido ? "1" : null)">
+                <input type="hidden" name="etapaId" value="@e.Id">
+                <input type="hidden" name="motivoPerdaId" value="">
+                <button title="Mover para @e.Nome" disabled="@(e.Id == l.EtapaId)">@e.Nome</button>
+            </form>
+        }
+    </div>
+</div>
+
+<div class="lead-corpo">
+    <aside class="lado">
+        <form method="post" asp-antiforgery="true" action="/leads/@l.Id" class="secao pilha" id="form-lead">
+            <h3>Dados do lead <button class="btn pri sm">Salvar</button></h3>
+            <label class="campo">Nome do lead<input name="titulo" value="@l.Titulo" required></label>
+            <div class="grid2">
+                <label class="campo">Valor (R$)<input name="valor" type="number" min="0" step="0.01" value="@l.Valor.ToString(System.Globalization.CultureInfo.InvariantCulture)"></label>
+                <label class="campo">Responsável
+                    @if (Model.PodeGerir)
+                    {
+                        <select name="responsavelId">
+                            <option value="">—</option>
+                            @foreach (var u in Model.Usuarios) { <option value="@u.Id" selected="@(u.Id == l.ResponsavelId)">@u.Nome</option> }
+                        </select>
+                    }
+                    else
+                    {
+                        <input value="@l.Responsavel?.Nome" disabled><input type="hidden" name="responsavelId" value="@l.ResponsavelId">
+                    }
+                </label>
+            </div>
+            <label class="campo">Tags (separadas por vírgula)
+                <input name="tags" value="@string.Join(", ", l.Tags.Select(t => t.Tag!.Nome))" list="lista-tags" placeholder="ex.: associado, evento">
+                <datalist id="lista-tags">@foreach (var t in Model.TodasTags) { <option value="@t"></option> }</datalist>
+            </label>
+            @await Html.PartialAsync("_Campos", new CamposVm(Model.Campos, Model.Valores))
+        </form>
+
+        <section class="secao">
+            <h3>Contatos <button class="ico-btn" type="button" data-abre="#vincular-contato" title="Adicionar contato" aria-label="Adicionar contato"><svg><use href="#i-mais"/></svg></button></h3>
+            @if (l.Contatos.Count == 0) { <p class="muted" style="margin:0">Nenhum contato vinculado.</p> }
+            @foreach (var lc in l.Contatos.OrderByDescending(c => c.Principal))
+            {
+                var c = lc.Contato!;
+                <div class="vinculo">
+                    <span class="av">@Texto.Iniciais(c.Nome)</span>
+                    <div class="info">
+                        <b><a href="/contatos/@c.Id" style="color:inherit">@c.Nome</a></b>
+                        <small>
+                            @if (!string.IsNullOrEmpty(c.Celular)) { <a href="@Whats(c.Celular)" target="_blank" rel="noopener" title="Abrir no WhatsApp">@c.Celular</a> }
+                            @if (!string.IsNullOrEmpty(c.Email)) { <a href="mailto:@c.Email">@c.Email</a> }
+                        </small>
+                    </div>
+                    <form method="post" asp-antiforgery="true" action="/leads/@l.Id/contatos/@c.Id/remover"><button class="ico-btn" title="Desvincular" aria-label="Desvincular contato"><svg><use href="#i-x"/></svg></button></form>
+                </div>
+            }
+        </section>
+
+        <section class="secao">
+            <h3>Empresa</h3>
+            <form method="post" asp-antiforgery="true" action="/leads/@l.Id/empresa" class="linha" data-autocompleta="empresas">
+                <input type="hidden" name="empresaId" value="@l.EmpresaId">
+                <input name="nome" value="@l.Empresa?.Nome" placeholder="Buscar ou criar empresa" autocomplete="off" style="flex:1">
+                <button class="btn sm">Salvar</button>
+            </form>
+            @if (l.Empresa is not null) { <a href="/empresas/@l.Empresa.Id" style="font-size:12px;display:inline-block;margin-top:8px">Abrir ficha da empresa →</a> }
+        </section>
+
+        @if (Model.PodeGerir)
+        {
+            <form method="post" asp-antiforgery="true" action="/leads/@l.Id/excluir" onsubmit="return confirm('Excluir este lead e todo o histórico? Não dá para desfazer.')">
+                <button class="btn perigo sm">Excluir lead</button>
+            </form>
+        }
+    </aside>
+
+    <section class="feed-box" id="feed">
+        <div class="abas" role="tablist">
+            <button class="on" type="button" data-aba="nota" role="tab"><svg><use href="#i-nota"/></svg>Nota</button>
+            <button type="button" data-aba="tarefa" role="tab"><svg><use href="#i-tarefa"/></svg>Tarefa</button>
+        </div>
+        <form method="post" asp-antiforgery="true" action="/leads/@l.Id/nota" class="compositor on" data-painel="nota">
+            <textarea name="texto" placeholder="Registre o que foi conversado com o cliente…" required></textarea>
+            <div><button class="btn pri sm">Adicionar nota</button></div>
+        </form>
+        <form method="post" asp-antiforgery="true" action="/leads/@l.Id/tarefa" class="compositor" data-painel="tarefa">
+            <div class="grid2">
+                <label class="campo">Tipo
+                    <select name="tipo">@foreach (var t in Enum.GetValues<TipoTarefa>()) { <option value="@t">@Texto.NomeTarefa(t)</option> }</select>
+                </label>
+                <label class="campo">Prazo<input type="datetime-local" name="prazo" required value="@Hora.Local(DateTime.UtcNow.AddDays(1)).ToString("yyyy-MM-dd'T'09:00")"></label>
+            </div>
+            <label class="campo">Descrição<input name="texto" required placeholder="Ex.: Ligar para apresentar o combo de soluções"></label>
+            @if (Model.PodeGerir)
+            {
+                <label class="campo">Para
+                    <select name="responsavelId">@foreach (var u in Model.Usuarios) { <option value="@u.Id" selected="@(u.Id == (l.ResponsavelId ?? 0))">@u.Nome</option> }</select>
+                </label>
+            }
+            <div><button class="btn pri sm">Criar tarefa</button></div>
+        </form>
+
+        @if (Model.TarefasAbertas.Count > 0)
+        {
+            <div class="fixadas">
+                @foreach (var t in Model.TarefasAbertas)
+                {
+                    <div class="tarefa-item @(t.Prazo < agora ? "atrasada" : "")">
+                        <svg style="margin-top:2px;color:var(--blue)"><use href="#i-tarefa"/></svg>
+                        <div class="tx">
+                            <b>@Texto.NomeTarefa(t.Tipo):</b> @t.Texto
+                            <small>@(t.Prazo < agora ? "Atrasada · " : "")@Hora.Prazo(t.Prazo) · @t.Responsavel?.Nome</small>
+                        </div>
+                        <form method="post" asp-antiforgery="true" action="/tarefas/@t.Id/concluir" class="linha" style="flex-wrap:nowrap">
+                            <input name="resultado" placeholder="Resultado (opcional)" style="width:170px;height:30px;padding:4px 8px">
+                            <button class="btn sm">Concluir</button>
+                        </form>
+                    </div>
+                }
+            </div>
+        }
+
+        <ol class="linha-tempo">
+            @{ DateTime? dia = null; }
+            @foreach (var a in Model.Atividades)
+            {
+                var local = Hora.Local(a.CriadoEm);
+                if (dia != local.Date)
+                {
+                    dia = local.Date;
+                    <li class="dia-sep">@(local.Date == Hora.HojeLocal ? "Hoje" : local.Date == Hora.HojeLocal.AddDays(-1) ? "Ontem" : local.ToString("dd 'de' MMMM 'de' yyyy", Hora.PtBr))</li>
+                }
+                var cls = a.Tipo switch { TipoAtividade.Nota => "nota", TipoAtividade.MudancaEtapa => "etapa", TipoAtividade.TarefaConcluida => "ok", _ => "" };
+                <li class="@cls">
+                    <div class="q"><span class="av sm">@Texto.Iniciais(a.Usuario?.Nome ?? "Sistema")</span><b>@(a.Usuario?.Nome ?? "Sistema")</b> · @local.ToString("HH:mm")</div>
+                    <div class="t">@a.Texto</div>
+                </li>
+            }
+        </ol>
+    </section>
+</div>
+
+<dialog id="vincular-contato">
+    <form method="post" asp-antiforgery="true" action="/leads/@l.Id/contatos" data-autocompleta="contatos">
+        <div class="modal-cab"><h2>Adicionar contato</h2><button type="button" class="ico-btn" data-fecha aria-label="Fechar"><svg><use href="#i-x"/></svg></button></div>
+        <div class="modal-corpo">
+            <input type="hidden" name="contatoId" value="">
+            <label class="campo">Nome (busque um contato existente ou digite um novo)<input name="nome" autocomplete="off" required></label>
+            <div class="grid2">
+                <label class="campo">Telefone / WhatsApp<input name="celular"></label>
+                <label class="campo">E-mail<input name="email" type="email"></label>
+            </div>
+        </div>
+        <div class="modal-pe"><button type="button" class="btn" data-fecha>Cancelar</button><button class="btn pri">Adicionar</button></div>
+    </form>
+</dialog>
+
+<dialog id="motivo-perda">
+    <form method="dialog">
+        <div class="modal-cab"><h2>Por que a venda foi perdida?</h2></div>
+        <div class="modal-corpo">
+            <select id="motivo-select">
+                <option value="">Sem motivo informado</option>
+                @foreach (var m in Model.MotivosPerda) { <option value="@m.Id">@m.Nome</option> }
+            </select>
+        </div>
+        <div class="modal-pe"><button class="btn" value="cancelar">Cancelar</button><button class="btn pri" value="ok">Confirmar perda</button></div>
+    </form>
+</dialog>

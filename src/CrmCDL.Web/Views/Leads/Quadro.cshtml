@@ -1,0 +1,157 @@
+@model QuadroVm
+@{
+    ViewData["Title"] = Model.Funil.Nome;
+    ViewData["BodyClass"] = "quadro";
+    var porEtapa = Model.Cartoes.GroupBy(c => c.EtapaId).ToDictionary(g => g.Key, g => g.ToList());
+    var abertos = Model.Cartoes.Where(c => !Model.Etapas.First(e => e.Id == c.EtapaId).Fechada).ToList();
+    var hojeFim = Hora.ParaUtc(Hora.HojeLocal.AddDays(1));
+}
+<header class="topo">
+    <form method="get" action="/leads" class="filtros" style="margin-right:auto">
+        <label class="sr" for="funil">Funil</label>
+        <select id="funil" name="funil" class="seletor-funil" onchange="this.form.submit()">
+            @foreach (var f in Model.Funis)
+            {
+                <option value="@f.Id" selected="@(f.Id == Model.Funil.Id)">@f.Nome</option>
+            }
+        </select>
+        <div class="resumo-funil">
+            <span><b class="num">@abertos.Count</b> em aberto</span>
+            <span><b class="num">@Hora.Dinheiro(abertos.Sum(c => c.Valor))</b> em negociação</span>
+        </div>
+        <div class="busca">
+            <svg><use href="#i-busca"/></svg>
+            <input type="search" name="busca" value="@Model.Busca" placeholder="Buscar lead, contato, telefone…" aria-label="Buscar">
+        </div>
+        @if (Model.Usuarios.Count > 0)
+        {
+            <select name="responsavel" onchange="this.form.submit()" aria-label="Responsável" style="width:auto">
+                <option value="">Toda a equipe</option>
+                @foreach (var u in Model.Usuarios)
+                {
+                    <option value="@u.Id" selected="@(u.Id == Model.Responsavel)">@u.Nome</option>
+                }
+            </select>
+        }
+        <label class="chk" title="Por padrão, ganhos e perdidos mostram só os últimos 30 dias">
+            <input type="checkbox" name="fechados" value="true" checked="@Model.Fechados" onchange="this.form.submit()"> Fechados antigos
+        </label>
+    </form>
+    <button class="btn pri" type="button" data-abre="#novo-lead"><svg><use href="#i-mais"/></svg>Novo lead</button>
+</header>
+
+<div class="colunas" id="quadro" data-funil="@Model.Funil.Id">
+    @foreach (var e in Model.Etapas)
+    {
+        var lista = porEtapa.TryGetValue(e.Id, out var l) ? l : new List<CartaoLead>();
+        <section class="coluna @(e.Fechada ? "fechada" : "")" data-etapa="@e.Id" data-tipo="@e.Tipo" aria-label="@e.Nome">
+            <div class="col-cab" style="--cor:@e.Cor">
+                <div class="t"><span title="@e.Nome">@e.Nome</span><span class="qtd" data-qtd>@lista.Count</span></div>
+                <div class="soma" data-soma>@Hora.Dinheiro(lista.Sum(c => c.Valor))</div>
+            </div>
+            @if (!e.Fechada)
+            {
+                <button class="col-add" type="button" data-rapido="@e.Id"><svg><use href="#i-mais"/></svg>Adicionar</button>
+            }
+            <div class="col-lista" data-lista>
+                @foreach (var c in lista)
+                {
+                    var classePrazo = c.ProximaTarefa is null ? "sem" : c.ProximaTarefa < Model.Agora ? "atrasada" : c.ProximaTarefa < hojeFim ? "hoje" : "";
+                    <a class="cartao" href="/leads/@c.Id" draggable="true" data-id="@c.Id" data-pos="@c.Posicao.ToString(System.Globalization.CultureInfo.InvariantCulture)" data-valor="@c.Valor.ToString(System.Globalization.CultureInfo.InvariantCulture)">
+                        <div class="c-tit">@c.Titulo</div>
+                        @if (c.Valor > 0) { <span class="c-val">@Hora.Dinheiro(c.Valor)</span> }
+                        @if (c.Contato is not null || c.Empresa is not null)
+                        {
+                            <div class="c-sub">@string.Join(" · ", new[] { c.Contato, c.Empresa }.Where(x => x is not null))</div>
+                        }
+                        <div class="c-rod">
+                            @if (!e.Fechada)
+                            {
+                                <span class="c-prazo @classePrazo"><svg><use href="#i-relogio"/></svg>@(c.ProximaTarefa is DateTime p ? Hora.Prazo(p) : "Sem tarefa")</span>
+                            }
+                            else
+                            {
+                                <span class="c-prazo sem">@Hora.Relativa(c.AtualizadoEm)</span>
+                            }
+                            @foreach (var t in c.Tags.Take(2)) { <span class="tag">@t</span> }
+                            @if (c.Responsavel is not null) { <span class="av sm" title="@c.Responsavel">@Texto.Iniciais(c.Responsavel)</span> }
+                        </div>
+                    </a>
+                }
+            </div>
+        </section>
+    }
+</div>
+
+<template id="tpl-rapido">
+    <form class="form-rapido" method="post" asp-antiforgery="true" action="/leads/novo">
+        <input type="hidden" name="FunilId" value="@Model.Funil.Id">
+        <input type="hidden" name="EtapaId" value="">
+        <input name="Titulo" placeholder="Nome do lead *" required>
+        <input name="ContatoNome" placeholder="Contato">
+        <input name="ContatoTelefone" placeholder="Telefone / WhatsApp">
+        <input name="Valor" type="number" min="0" step="0.01" placeholder="Valor (R$)">
+        <div class="linha"><button class="btn pri sm">Adicionar</button><button class="btn ghost sm" type="button" data-cancela>Cancelar</button></div>
+    </form>
+</template>
+
+<dialog id="novo-lead">
+    <form method="post" asp-antiforgery="true" action="/leads/novo">
+        <div class="modal-cab"><h2>Novo lead</h2><button type="button" class="ico-btn" data-fecha aria-label="Fechar"><svg><use href="#i-x"/></svg></button></div>
+        <div class="modal-corpo">
+            <input type="hidden" name="FunilId" value="@Model.Funil.Id">
+            <label class="campo">Nome do lead *<input name="Titulo" required placeholder="Ex.: Associação – Loja Centro"></label>
+            <div class="grid2">
+                <label class="campo">Etapa
+                    <select name="EtapaId">
+                        @foreach (var e in Model.Etapas.Where(e => !e.Fechada))
+                        {
+                            <option value="@e.Id" selected="@(e.Tipo == TipoEtapa.Normal && e == Model.Etapas.First(x => x.Tipo == TipoEtapa.Normal))">@e.Nome</option>
+                        }
+                    </select>
+                </label>
+                <label class="campo">Valor (R$)<input name="Valor" type="number" min="0" step="0.01" value="0"></label>
+            </div>
+            <div class="grid2">
+                <label class="campo">Contato<input name="ContatoNome"></label>
+                <label class="campo">Telefone / WhatsApp<input name="ContatoTelefone"></label>
+            </div>
+            <div class="grid2">
+                <label class="campo">E-mail<input name="ContatoEmail" type="email"></label>
+                <label class="campo">Empresa<input name="EmpresaNome"></label>
+            </div>
+            @if (Model.Usuarios.Count > 0)
+            {
+                <label class="campo">Responsável
+                    <select name="ResponsavelId">
+                        @foreach (var u in Model.Usuarios)
+                        {
+                            <option value="@u.Id" selected="@(u.Nome == User.Identity!.Name)">@u.Nome</option>
+                        }
+                    </select>
+                </label>
+            }
+        </div>
+        <div class="modal-pe">
+            <button type="button" class="btn" data-fecha>Cancelar</button>
+            <button class="btn" name="abrir" value="true">Criar e abrir</button>
+            <button class="btn pri">Criar lead</button>
+        </div>
+    </form>
+</dialog>
+
+<dialog id="motivo-perda">
+    <form method="dialog">
+        <div class="modal-cab"><h2>Por que a venda foi perdida?</h2></div>
+        <div class="modal-corpo">
+            <select name="motivo" id="motivo-select">
+                <option value="">Sem motivo informado</option>
+                @foreach (var m in Model.MotivosPerda) { <option value="@m.Id">@m.Nome</option> }
+            </select>
+        </div>
+        <div class="modal-pe">
+            <button class="btn" value="cancelar">Cancelar</button>
+            <button class="btn pri" value="ok">Confirmar perda</button>
+        </div>
+    </form>
+</dialog>

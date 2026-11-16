@@ -1,0 +1,11 @@
+@{ ViewData["Title"] = "Minha conta"; }
+<header class="topo"><h1>Minha conta</h1><form method="post" asp-antiforgery="true" action="/sair"><button class="btn"><svg><use href="#i-sair"/></svg>Sair</button></form></header>
+<div class="pagina" style="max-width:520px">
+    <form method="post" asp-antiforgery="true" action="/minha-conta/senha" class="card card-pad pilha">
+        <h2>Trocar senha</h2>
+        <label class="campo">Senha atual<input type="password" name="atual" autocomplete="current-password" required></label>
+        <label class="campo">Nova senha (mínimo 8 caracteres)<input type="password" name="nova" minlength="8" autocomplete="new-password" required></label>
+        <label class="campo">Confirme a nova senha<input type="password" name="confirmacao" minlength="8" autocomplete="new-password" required></label>
+        <div><button class="btn pri">Salvar nova senha</button></div>
+    </form>
+</div>

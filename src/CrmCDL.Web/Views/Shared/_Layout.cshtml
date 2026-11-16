@@ -1,0 +1,83 @@
+﻿@{
+    var rota = Context.Request.Path.Value ?? "/";
+    bool Ativo(string prefixo) => rota == prefixo || rota.StartsWith(prefixo + "/") || (prefixo == "/leads" && rota == "/");
+    var perfil = Enum.TryParse<Perfil>(User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value, out var p) ? p : Perfil.Vendedor;
+    var csrf = Antiforgery.GetAndStoreTokens(Context).RequestToken;
+}
+<!doctype html>
+<html lang="pt-BR">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="csrf" content="@csrf">
+    <title>@(ViewData["Title"] is string t ? t + " · " : "")CRM CDL</title>
+    <link rel="icon" href="~/img/icone.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@@400;500;600;700;800&family=JetBrains+Mono:wght@@500&display=swap">
+    <link rel="stylesheet" href="~/css/crm.css" asp-append-version="true">
+</head>
+<body class="@ViewData["BodyClass"]">
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+    <defs>
+        <symbol id="i-funil" viewBox="0 0 24 24"><path d="M3 4h18l-7 8v6l-4 2v-8z"/></symbol>
+        <symbol id="i-contato" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></symbol>
+        <symbol id="i-empresa" viewBox="0 0 24 24"><path d="M4 21V5l8-3v19M12 9h8v12M8 8v.01M8 12v.01M8 16v.01M16 13v.01M16 17v.01M2 21h20"/></symbol>
+        <symbol id="i-tarefa" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="3"/><path d="m8.5 12 2.5 2.5 4.5-5"/></symbol>
+        <symbol id="i-painel" viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></symbol>
+        <symbol id="i-config" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></symbol>
+        <symbol id="i-mais" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+        <symbol id="i-busca" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></symbol>
+        <symbol id="i-relogio" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
+        <symbol id="i-voltar" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></symbol>
+        <symbol id="i-x" viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></symbol>
+        <symbol id="i-nota" viewBox="0 0 24 24"><path d="M4 4h16v12l-4 4H4z"/><path d="M16 20v-4h4M8 9h8M8 13h5"/></symbol>
+        <symbol id="i-seta" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></symbol>
+        <symbol id="i-sair" viewBox="0 0 24 24"><path d="M15 4h4v16h-4M10 8l-4 4 4 4M6 12h10"/></symbol>
+        <symbol id="i-fone" viewBox="0 0 24 24"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2"/></symbol>
+        <symbol id="i-email" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></symbol>
+        <symbol id="i-arrastar" viewBox="0 0 24 24"><circle cx="9" cy="6" r="1"/><circle cx="15" cy="6" r="1"/><circle cx="9" cy="12" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="9" cy="18" r="1"/><circle cx="15" cy="18" r="1"/></symbol>
+    </defs>
+</svg>
+
+<aside class="nav" aria-label="Menu principal">
+    <a class="nav-logo" href="/leads" title="CRM CDL"><img src="~/img/logo-branco.png" alt="CDL Uberlândia" width="96"><span>CRM</span></a>
+    <nav>
+        <a href="/leads" class="@(Ativo("/leads") ? "on" : "")"><svg><use href="#i-funil"/></svg><span>Leads</span></a>
+        <a href="/contatos" class="@(Ativo("/contatos") ? "on" : "")"><svg><use href="#i-contato"/></svg><span>Contatos</span></a>
+        <a href="/empresas" class="@(Ativo("/empresas") ? "on" : "")"><svg><use href="#i-empresa"/></svg><span>Empresas</span></a>
+        <a href="/tarefas" class="@(Ativo("/tarefas") ? "on" : "")"><svg><use href="#i-tarefa"/></svg><span>Tarefas</span></a>
+        @if (perfil >= Perfil.Gestor)
+        {
+            <a href="/painel" class="@(Ativo("/painel") ? "on" : "")"><svg><use href="#i-painel"/></svg><span>Painel</span></a>
+        }
+        @if (perfil == Perfil.Administrador)
+        {
+            <a href="/configuracoes" class="@(Ativo("/configuracoes") ? "on" : "")"><svg><use href="#i-config"/></svg><span>Configurações</span></a>
+        }
+    </nav>
+    <div class="nav-eu">
+        <a href="/minha-conta" class="eu" title="Minha conta">
+            <span class="av">@Texto.Iniciais(User.Identity?.Name)</span>
+            <span class="eu-txt"><b>@User.Identity?.Name</b><small>@Texto.NomePerfil(perfil)</small></span>
+        </a>
+        <form method="post" asp-antiforgery="true" action="/sair"><button class="ico-btn" title="Sair" aria-label="Sair"><svg><use href="#i-sair"/></svg></button></form>
+    </div>
+</aside>
+
+<main class="main">
+    @if (TempData["msg"] is string msg)
+    {
+        <div class="toast ok" role="status">@msg</div>
+    }
+    @if (TempData["erro"] is string erro)
+    {
+        <div class="toast erro" role="alert">@erro</div>
+    }
+    @RenderBody()
+</main>
+
+<script src="~/js/crm.js" asp-append-version="true" defer></script>
+@await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

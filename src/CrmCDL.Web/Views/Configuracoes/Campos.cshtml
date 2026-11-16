@@ -1,0 +1,36 @@
+@model List<CampoPersonalizado>
+@{
+    ViewData["Title"] = "Campos";
+    var ent = (EntidadeCampo)ViewBag.Entidade;
+    string NomeEnt(EntidadeCampo e) => e switch { EntidadeCampo.Contato => "Contatos", EntidadeCampo.Empresa => "Empresas", _ => "Leads" };
+}
+@await Html.PartialAsync("_Abas", "campos")
+<div class="pagina" style="max-width:960px">
+    <div class="linha" style="justify-content:space-between;margin-bottom:14px">
+        <div class="linha">@foreach (var e in Enum.GetValues<EntidadeCampo>()) { <a class="btn sm @(e == ent ? "pri" : "")" href="?entidade=@e">@NomeEnt(e)</a> }</div>
+        <form method="post" asp-antiforgery="true" action="/configuracoes/campos/novo" class="linha">
+            <input type="hidden" name="entidade" value="@ent">
+            <input name="nome" placeholder="Nome do campo" required style="width:200px">
+            <select name="tipo" style="width:auto">@foreach (var t in Enum.GetValues<TipoCampo>()) { <option value="@t">@Texto.NomeTipoCampo(t)</option> }</select>
+            <button class="btn pri"><svg><use href="#i-mais"/></svg>Criar</button>
+        </form>
+    </div>
+    <div class="card" style="overflow:hidden">
+        <table class="tabela">
+            <thead><tr><th>Campo</th><th>Tipo</th><th>Opções</th><th>Ordem</th><th></th></tr></thead>
+            <tbody>
+            @if (Model.Count == 0) { <tr><td colspan="5" class="vazio">Nenhum campo personalizado em @NomeEnt(ent).</td></tr> }
+            @foreach (var c in Model)
+            {
+                <tr style="@(c.Ativo ? "" : "opacity:.5")">
+                    <td><b>@c.Nome</b>@if (c.KommoId is not null) { <span class="pill cinza" style="margin-left:6px">Kommo</span> }</td>
+                    <td>@Texto.NomeTipoCampo(c.Tipo)</td>
+                    <td class="num">@(c.Opcoes.Count > 0 ? c.Opcoes.Count.ToString() : "—")</td>
+                    <td class="num">@c.Ordem</td>
+                    <td style="text-align:right"><a class="btn sm" href="/configuracoes/campos/@c.Id">Editar</a></td>
+                </tr>
+            }
+            </tbody>
+        </table>
+    </div>
+</div>

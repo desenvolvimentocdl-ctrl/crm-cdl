@@ -1,0 +1,35 @@
+@model List<Usuario>
+@{ ViewData["Title"] = "Usuários"; }
+@await Html.PartialAsync("_Abas", "usuarios")
+<div class="pagina" style="max-width:1040px">
+    <form method="post" asp-antiforgery="true" action="/configuracoes/usuarios/novo" class="card card-pad" style="margin-bottom:16px">
+        <h2 style="margin-bottom:12px">Novo usuário</h2>
+        <div class="linha" style="align-items:end">
+            <label class="campo" style="flex:1 1 180px">Nome<input name="nome" required></label>
+            <label class="campo" style="flex:1 1 200px">E-mail<input name="email" type="email" required></label>
+            <label class="campo">Perfil<select name="perfil">@foreach (var p in Enum.GetValues<Perfil>()) { <option value="@p">@Texto.NomePerfil(p)</option> }</select></label>
+            <label class="campo" style="flex:1 1 160px">Senha inicial<input name="senha" type="text" minlength="8" required autocomplete="off"></label>
+            <button class="btn pri">Criar</button>
+        </div>
+        <p class="muted" style="margin:10px 0 0;font-size:12px"><b>Vendedor(a)</b> vê só os próprios leads. <b>Gestor</b> vê todos os leads e o painel. <b>Administrador</b> também acessa as configurações.</p>
+    </form>
+    <div class="card" style="overflow:hidden">
+        <table class="tabela">
+            <thead><tr><th>Usuário</th><th>Perfil</th><th>Ativo</th><th>Nova senha</th><th></th></tr></thead>
+            <tbody>
+            @foreach (var u in Model)
+            {
+                <tr>
+                    <td><form id="u@(u.Id)" method="post" asp-antiforgery="true" action="/configuracoes/usuarios/@u.Id"></form>
+                        <div class="nome"><span class="av sm">@Texto.Iniciais(u.Nome)</span><input form="u@(u.Id)" name="nome" value="@u.Nome" style="max-width:220px"></div>
+                        <small class="muted" style="margin-left:32px">@u.Email</small></td>
+                    <td><select form="u@(u.Id)" name="perfil">@foreach (var p in Enum.GetValues<Perfil>()) { <option value="@p" selected="@(p == u.Perfil)">@Texto.NomePerfil(p)</option> }</select></td>
+                    <td><input form="u@(u.Id)" type="hidden" name="ativo" value="false"><input form="u@(u.Id)" type="checkbox" name="ativo" value="true" checked="@u.Ativo" aria-label="Ativo"></td>
+                    <td><input form="u@(u.Id)" name="novaSenha" placeholder="Deixe vazio para manter" autocomplete="off"></td>
+                    <td><button form="u@(u.Id)" class="btn sm">Salvar</button></td>
+                </tr>
+            }
+            </tbody>
+        </table>
+    </div>
+</div>

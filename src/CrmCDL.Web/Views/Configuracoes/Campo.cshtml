@@ -1,0 +1,20 @@
+@model CampoPersonalizado
+@{ ViewData["Title"] = Model.Nome; }
+@await Html.PartialAsync("_Abas", "campos")
+<div class="pagina" style="max-width:640px">
+    <a href="/configuracoes/campos?entidade=@Model.Entidade" class="linha" style="gap:4px;margin-bottom:14px"><svg><use href="#i-voltar"/></svg>Campos</a>
+    <form method="post" asp-antiforgery="true" action="/configuracoes/campos/@Model.Id" class="card card-pad pilha">
+        <div class="grid2">
+            <label class="campo">Nome<input name="nome" value="@Model.Nome" required></label>
+            <label class="campo">Ordem de exibição<input type="number" name="ordem" value="@Model.Ordem"></label>
+        </div>
+        <p class="muted" style="margin:0">Tipo: <b>@Texto.NomeTipoCampo(Model.Tipo)</b></p>
+        @if (Model.Tipo is TipoCampo.Lista or TipoCampo.MultiplaEscolha)
+        {
+            <label class="campo">Opções (uma por linha)<textarea name="opcoes" rows="12">@string.Join("\n", Model.Opcoes.OrderBy(o => o.Ordem).Select(o => o.Valor))</textarea></label>
+        }
+        <input type="hidden" name="ativo" value="false"><label class="chk"><input type="checkbox" name="ativo" value="true" checked="@Model.Ativo">Campo ativo (aparece nas fichas)</label>
+        <div><button class="btn pri">Salvar campo</button></div>
+    </form>
+    <form method="post" asp-antiforgery="true" action="/configuracoes/campos/@Model.Id/excluir" style="margin-top:14px" onsubmit="return confirm('Excluir o campo e todos os valores já preenchidos nele?')"><button class="btn perigo sm">Excluir campo</button></form>
+</div>

@@ -1,0 +1,65 @@
+@model Funil
+@{
+    ViewData["Title"] = Model.Nome;
+    var contagem = (Dictionary<int, int>)ViewBag.Contagem;
+    var normais = Model.Etapas.Where(e => e.Tipo == TipoEtapa.Normal).OrderBy(e => e.Ordem).ToList();
+    var entrada = Model.Etapas.FirstOrDefault(e => e.Tipo == TipoEtapa.Entrada);
+    var ganho = Model.Etapas.FirstOrDefault(e => e.Tipo == TipoEtapa.Ganho);
+    var perdido = Model.Etapas.FirstOrDefault(e => e.Tipo == TipoEtapa.Perdido);
+    int Qtd(Etapa? e) => e is not null && contagem.TryGetValue(e.Id, out var q) ? q : 0;
+}
+@await Html.PartialAsync("_Abas", "funis")
+<div class="pagina" style="max-width:760px">
+    <a href="/configuracoes/funis" class="linha" style="gap:4px;margin-bottom:14px"><svg><use href="#i-voltar"/></svg>Todos os funis</a>
+    <form method="post" asp-antiforgery="true" action="/configuracoes/funis/@Model.Id" class="card card-pad pilha" id="form-funil">
+        <div class="grid2" style="align-items:end">
+            <label class="campo">Nome do funil<input name="nome" value="@Model.Nome" required></label>
+            <label class="chk"><input type="checkbox" name="principal" value="true" checked="@Model.Principal">Funil principal (abre por padrão)</label>
+        </div>
+
+        <h3 style="margin-top:8px">Etapas</h3>
+        <p class="muted" style="margin:-6px 0 0;font-size:12px">Arraste pela alça para reordenar. Etapas com leads não podem ser excluídas.</p>
+        <div class="editor-etapas">
+            @if (entrada is not null)
+            {
+                <div class="etapa-ed fixa"><span class="alca"></span><span class="ponto" style="background:@entrada.Cor;margin:0 11px"></span><span style="flex:1;padding:8px 10px;font-weight:600">@entrada.Nome</span><span class="qtd">@Qtd(entrada) leads · fixa</span></div>
+            }
+            <div class="editor-etapas" id="etapas-normais">
+                @foreach (var e in normais)
+                {
+                    <div class="etapa-ed" draggable="true">
+                        <span class="alca" title="Arrastar"><svg><use href="#i-arrastar"/></svg></span>
+                        <input type="hidden" data-campo="Id" value="@e.Id">
+                        <input type="color" data-campo="Cor" value="@e.Cor" aria-label="Cor">
+                        <input type="text" data-campo="Nome" value="@e.Nome" required aria-label="Nome da etapa">
+                        <span class="qtd">@Qtd(e) leads</span>
+                        <button type="button" class="ico-btn" data-remove-etapa="@Qtd(e)" aria-label="Remover etapa"><svg><use href="#i-x"/></svg></button>
+                    </div>
+                }
+            </div>
+            <button type="button" class="col-add" style="margin:4px 0" id="add-etapa"><svg><use href="#i-mais"/></svg>Adicionar etapa</button>
+            @if (ganho is not null)
+            {
+                <div class="etapa-ed fixa"><span class="alca"></span><span class="ponto" style="background:var(--ok);margin:0 11px"></span><input type="text" name="nomeGanho" value="@ganho.Nome" aria-label="Nome da etapa de ganho"><span class="qtd">@Qtd(ganho) leads · fecha como ganho</span></div>
+            }
+            @if (perdido is not null)
+            {
+                <div class="etapa-ed fixa"><span class="alca"></span><span class="ponto" style="background:var(--erro);margin:0 11px"></span><input type="text" name="nomePerdido" value="@perdido.Nome" aria-label="Nome da etapa de perda"><span class="qtd">@Qtd(perdido) leads · fecha como perdido</span></div>
+            }
+        </div>
+        <div class="linha" style="justify-content:space-between;margin-top:6px">
+            <button class="btn pri">Salvar funil</button>
+        </div>
+    </form>
+    <form method="post" asp-antiforgery="true" action="/configuracoes/funis/@Model.Id/excluir" style="margin-top:14px" onsubmit="return confirm('Excluir o funil @Model.Nome?')"><button class="btn perigo sm">Excluir funil</button></form>
+</div>
+<template id="tpl-etapa">
+    <div class="etapa-ed" draggable="true">
+        <span class="alca" title="Arrastar"><svg><use href="#i-arrastar"/></svg></span>
+        <input type="hidden" data-campo="Id" value="">
+        <input type="color" data-campo="Cor" value="#99ccff" aria-label="Cor">
+        <input type="text" data-campo="Nome" value="" required placeholder="Nome da etapa" aria-label="Nome da etapa">
+        <span class="qtd">nova</span>
+        <button type="button" class="ico-btn" data-remove-etapa="0" aria-label="Remover etapa"><svg><use href="#i-x"/></svg></button>
+    </div>
+</template>

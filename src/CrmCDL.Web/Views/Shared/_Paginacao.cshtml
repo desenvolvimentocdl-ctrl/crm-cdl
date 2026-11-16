@@ -1,0 +1,10 @@
+@model (int Pagina, int Paginas, string? Busca)
+@if (Model.Paginas > 1)
+{
+    var b = Uri.EscapeDataString(Model.Busca ?? "");
+    <nav class="paginacao" aria-label="Paginação">
+        @if (Model.Pagina > 1) { <a class="btn sm" href="?busca=@b&pagina=@(Model.Pagina - 1)">Anterior</a> }
+        <span>Página @Model.Pagina de @Model.Paginas</span>
+        @if (Model.Pagina < Model.Paginas) { <a class="btn sm" href="?busca=@b&pagina=@(Model.Pagina + 1)">Próxima</a> }
+    </nav>
+}

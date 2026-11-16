@@ -1,0 +1,74 @@
+@model CamposVm
+@* Campos personalizados (lead, contato ou empresa). Rastreamento (UTM) fica recolhido por ser só informativo. *@
+@{
+    var normais = Model.Campos.Where(c => c.Tipo != TipoCampo.Rastreamento).ToList();
+    var rastreio = Model.Campos.Where(c => c.Tipo == TipoCampo.Rastreamento).ToList();
+}
+@foreach (var c in normais)
+{
+    var v = Model.Valores.TryGetValue(c.Id, out var x) ? x : "";
+    var nome = $"campo[{c.Id}]";
+    <input type="hidden" name="campos_presentes[@c.Id]" value="1">
+    @switch (c.Tipo)
+    {
+        case TipoCampo.Lista:
+            <label class="campo">@c.Nome
+                <select name="@nome">
+                    <option value="">—</option>
+                    @foreach (var o in c.Opcoes.OrderBy(o => o.Ordem))
+                    {
+                        <option value="@o.Id" selected="@(v == o.Id.ToString())">@o.Valor</option>
+                    }
+                </select>
+            </label>
+            break;
+        case TipoCampo.MultiplaEscolha:
+            var marcados = v.Split(',', StringSplitOptions.RemoveEmptyEntries).ToHashSet();
+            <div class="campo" style="display:flex;flex-direction:column;gap:5px;font-size:12px;font-weight:600;color:var(--muted)">
+                <span>@c.Nome @if (marcados.Count > 0) { <span class="pill">@marcados.Count</span> }</span>
+                @if (c.Opcoes.Count > 8) { <input type="search" placeholder="Filtrar opções…" data-filtra-multi> }
+                <div class="multi">
+                    @foreach (var o in c.Opcoes.OrderByDescending(o => marcados.Contains(o.Id.ToString())).ThenBy(o => o.Ordem))
+                    {
+                        <label><input type="checkbox" name="@nome" value="@o.Id" checked="@marcados.Contains(o.Id.ToString())">@o.Valor</label>
+                    }
+                </div>
+            </div>
+            break;
+        case TipoCampo.TextoLongo:
+            <label class="campo">@c.Nome<textarea name="@nome" rows="3">@v</textarea></label>
+            break;
+        case TipoCampo.Checkbox:
+            <input type="hidden" name="@nome" value="">
+            <label class="chk"><input type="checkbox" name="@nome" value="1" checked="@(v == "1")">@c.Nome</label>
+            break;
+        case TipoCampo.Data:
+            <label class="campo">@c.Nome<input type="date" name="@nome" value="@v"></label>
+            break;
+        case TipoCampo.DataHora:
+            <label class="campo">@c.Nome<input type="datetime-local" name="@nome" value="@v"></label>
+            break;
+        case TipoCampo.Numero:
+            <label class="campo">@c.Nome<input type="number" step="any" name="@nome" value="@v"></label>
+            break;
+        case TipoCampo.Url:
+            <label class="campo">@c.Nome<input type="url" name="@nome" value="@v" placeholder="https://"></label>
+            break;
+        default:
+            <label class="campo">@c.Nome<input type="text" name="@nome" value="@v"></label>
+            break;
+    }
+}
+@if (rastreio.Count > 0)
+{
+    <details class="mais">
+        <summary>Rastreamento de campanha (@rastreio.Count(c => Model.Valores.ContainsKey(c.Id)) preenchidos)</summary>
+        <div class="pilha" style="margin-top:10px">
+            @foreach (var c in rastreio)
+            {
+                <input type="hidden" name="campos_presentes[@c.Id]" value="1">
+                <label class="campo">@c.Nome<input type="text" name="campo[@c.Id]" value="@(Model.Valores.TryGetValue(c.Id, out var r) ? r : "")"></label>
+            }
+        </div>
+    </details>
+}

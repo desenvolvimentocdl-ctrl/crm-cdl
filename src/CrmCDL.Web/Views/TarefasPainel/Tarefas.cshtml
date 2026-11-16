@@ -1,0 +1,70 @@
+@model List<Tarefa>
+@{
+    ViewData["Title"] = "Tarefas";
+    string filtro = ViewBag.Filtro;
+    var usuarios = (List<Usuario>)ViewBag.Usuarios;
+    var agora = DateTime.UtcNow;
+    string Link(string f) => $"/tarefas?filtro={f}" + (ViewBag.Responsavel is int r ? $"&responsavel={r}" : "");
+}
+<header class="topo">
+    <h1>Tarefas</h1>
+    @if (usuarios.Count > 0)
+    {
+        <form method="get"><input type="hidden" name="filtro" value="@filtro">
+            <select name="responsavel" onchange="this.form.submit()" aria-label="Responsável" style="width:auto">
+                <option value="">Toda a equipe</option>
+                @foreach (var u in usuarios) { <option value="@u.Id" selected="@(u.Id == (int?)ViewBag.Responsavel)">@u.Nome</option> }
+            </select>
+        </form>
+    }
+    <button class="btn pri" data-abre="#nova"><svg><use href="#i-mais"/></svg>Nova tarefa</button>
+</header>
+<nav class="sub-abas">
+    <a href="@Link("abertas")" class="@(filtro == "abertas" ? "on" : "")">Em aberto</a>
+    <a href="@Link("atrasadas")" class="@(filtro == "atrasadas" ? "on" : "")">Atrasadas</a>
+    <a href="@Link("hoje")" class="@(filtro == "hoje" ? "on" : "")">Para hoje</a>
+    <a href="@Link("concluidas")" class="@(filtro == "concluidas" ? "on" : "")">Concluídas</a>
+</nav>
+<div class="pagina pilha" style="max-width:900px">
+    @if (Model.Count == 0) { <div class="card vazio">Nenhuma tarefa aqui. 🎉</div> }
+    @foreach (var t in Model)
+    {
+        <div class="tarefa-item @(!t.Concluida && t.Prazo < agora ? "atrasada" : "")">
+            <svg style="margin-top:2px;color:@(t.Concluida ? "var(--ok)" : "var(--blue)")"><use href="#i-tarefa"/></svg>
+            <div class="tx">
+                <b>@Texto.NomeTarefa(t.Tipo):</b> @t.Texto
+                <small>
+                    @if (t.Concluida) { <text>Concluída @Hora.Relativa(t.ConcluidaEm ?? t.CriadoEm)@(t.Resultado is null ? "" : " — " + t.Resultado)</text> }
+                    else { <text>@(t.Prazo < agora ? "Atrasada · " : "")@Hora.Prazo(t.Prazo)</text> }
+                    · @t.Responsavel?.Nome
+                    @if (t.Lead is not null) { <text> · </text><a href="/leads/@t.Lead.Id">@t.Lead.Titulo</a> }
+                </small>
+            </div>
+            @if (!t.Concluida)
+            {
+                <form method="post" asp-antiforgery="true" action="/tarefas/@t.Id/concluir" class="linha" style="flex-wrap:nowrap">
+                    <input name="resultado" placeholder="Resultado (opcional)" style="width:180px;height:30px;padding:4px 8px">
+                    <button class="btn sm">Concluir</button>
+                </form>
+            }
+        </div>
+    }
+</div>
+<dialog id="nova">
+    <form method="post" asp-antiforgery="true" action="/tarefas/nova">
+        <div class="modal-cab"><h2>Nova tarefa</h2><button type="button" class="ico-btn" data-fecha aria-label="Fechar"><svg><use href="#i-x"/></svg></button></div>
+        <div class="modal-corpo">
+            <div class="grid2">
+                <label class="campo">Tipo<select name="tipo">@foreach (var tp in Enum.GetValues<TipoTarefa>()) { <option value="@tp">@Texto.NomeTarefa(tp)</option> }</select></label>
+                <label class="campo">Prazo<input type="datetime-local" name="prazo" required value="@Hora.Local(DateTime.UtcNow.AddDays(1)).ToString("yyyy-MM-dd'T'09:00")"></label>
+            </div>
+            <label class="campo">Descrição<input name="texto" required></label>
+            @if (usuarios.Count > 0)
+            {
+                <label class="campo">Para<select name="responsavelId">@foreach (var u in usuarios) { <option value="@u.Id" selected="@(u.Nome == User.Identity!.Name)">@u.Nome</option> }</select></label>
+            }
+            <p class="muted" style="margin:0;font-size:12px">Para tarefas ligadas a um cliente, crie pela página do lead.</p>
+        </div>
+        <div class="modal-pe"><button type="button" class="btn" data-fecha>Cancelar</button><button class="btn pri">Criar</button></div>
+    </form>
+</dialog>

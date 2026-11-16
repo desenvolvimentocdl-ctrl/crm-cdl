@@ -1,0 +1,41 @@
+@model Empresa
+@{
+    ViewData["Title"] = Model.Nome;
+    var usuarios = (List<Usuario>)ViewBag.Usuarios;
+}
+<header class="topo">
+    <a class="ico-btn" href="/empresas" aria-label="Voltar"><svg><use href="#i-voltar"/></svg></a>
+    <h1>@Model.Nome</h1>
+    @if (User.IsInRole("Gestor") || User.IsInRole("Administrador"))
+    {
+        <form method="post" asp-antiforgery="true" action="/empresas/@Model.Id/excluir" onsubmit="return confirm('Excluir esta empresa? Contatos e leads continuam salvos, só perdem o vínculo.')"><button class="btn perigo sm">Excluir</button></form>
+    }
+</header>
+<div class="lead-corpo">
+    <form method="post" asp-antiforgery="true" action="/empresas/@Model.Id" class="secao pilha">
+        <h3>Dados da empresa <button class="btn pri sm">Salvar</button></h3>
+        <label class="campo">Nome<input name="Nome" value="@Model.Nome" required></label>
+        <div class="grid2">
+            <label class="campo">CNPJ<input name="Cnpj" value="@Model.Cnpj"></label>
+            <label class="campo">Telefone<input name="Telefone" value="@Model.Telefone"></label>
+        </div>
+        <label class="campo">E-mail<input name="Email" type="email" value="@Model.Email"></label>
+        <label class="campo">Site<input name="Site" type="url" value="@Model.Site" placeholder="https://"></label>
+        <label class="campo">Endereço<textarea name="Endereco" rows="2">@Model.Endereco</textarea></label>
+        <label class="campo">Responsável
+            <select name="ResponsavelId"><option value="">—</option>@foreach (var u in usuarios) { <option value="@u.Id" selected="@(u.Id == Model.ResponsavelId)">@u.Nome</option> }</select>
+        </label>
+        @await Html.PartialAsync("_Campos", new CamposVm((List<CampoPersonalizado>)ViewBag.Campos, (Dictionary<int, string>)ViewBag.Valores))
+    </form>
+    <div class="pilha">
+        <section class="secao">
+            <h3>Contatos (@Model.Contatos.Count)</h3>
+            @if (Model.Contatos.Count == 0) { <p class="muted" style="margin:0">Nenhum contato nesta empresa.</p> }
+            @foreach (var c in Model.Contatos.OrderBy(c => c.Nome))
+            {
+                <div class="vinculo"><span class="av">@Texto.Iniciais(c.Nome)</span><div class="info"><b><a href="/contatos/@c.Id" style="color:inherit">@c.Nome</a></b><small>@c.Cargo @c.Celular @c.Email</small></div></div>
+            }
+        </section>
+        @await Html.PartialAsync("_LeadsVinculados", (List<Lead>)ViewBag.Leads)
+    </div>
+</div>

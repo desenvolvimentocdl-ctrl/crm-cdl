@@ -1,0 +1,29 @@
+@model List<Funil>
+@{ ViewData["Title"] = "Funis"; var contagem = (Dictionary<int, int>)ViewBag.Contagem; }
+@await Html.PartialAsync("_Abas", "funis")
+<div class="pagina" style="max-width:960px">
+    <div class="linha" style="justify-content:space-between;margin-bottom:14px">
+        <p class="muted" style="margin:0">A ordem aqui é a ordem do seletor de funis no quadro.</p>
+        <form method="post" asp-antiforgery="true" action="/configuracoes/funis/novo" class="linha"><input name="nome" placeholder="Nome do novo funil" required style="width:240px"><button class="btn pri"><svg><use href="#i-mais"/></svg>Criar funil</button></form>
+    </div>
+    <div class="card">
+        @foreach (var f in Model)
+        {
+            <div class="funil-linha" style="@(f.Ativo ? "" : "opacity:.55")">
+                <div style="display:flex;flex-direction:column">
+                    <form method="post" asp-antiforgery="true" action="/configuracoes/funis/@f.Id/mover"><input type="hidden" name="direcao" value="-1"><button class="ico-btn" style="height:20px" aria-label="Subir">▲</button></form>
+                    <form method="post" asp-antiforgery="true" action="/configuracoes/funis/@f.Id/mover"><input type="hidden" name="direcao" value="1"><button class="ico-btn" style="height:20px" aria-label="Descer">▼</button></form>
+                </div>
+                <div style="min-width:220px">
+                    <a href="/configuracoes/funis/@f.Id"><b>@f.Nome</b></a>
+                    @if (f.Principal) { <span class="pill">Principal</span> }
+                    @if (!f.Ativo) { <span class="pill cinza">Arquivado</span> }
+                    <div class="muted" style="font-size:12px">@f.Etapas.Count etapas · <span class="num">@(contagem.TryGetValue(f.Id, out var q) ? q : 0)</span> leads</div>
+                </div>
+                <div class="mini" aria-hidden="true">@foreach (var e in f.Etapas.OrderBy(e => e.Ordem)) { <i style="background:@e.Cor" title="@e.Nome"></i> }</div>
+                <a class="btn sm" href="/configuracoes/funis/@f.Id" style="margin-left:auto">Editar</a>
+                <form method="post" asp-antiforgery="true" action="/configuracoes/funis/@f.Id/ativo"><button class="btn sm ghost">@(f.Ativo ? "Arquivar" : "Reativar")</button></form>
+            </div>
+        }
+    </div>
+</div>

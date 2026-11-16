@@ -1,0 +1,45 @@
+@model string?
+@{ Layout = null; }
+<!doctype html>
+<html lang="pt-BR">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Entrar · CRM CDL</title>
+    <link rel="icon" href="~/img/icone.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@@400;500;600;700;800&display=swap">
+    <link rel="stylesheet" href="~/css/crm.css" asp-append-version="true">
+</head>
+<body>
+<div class="login">
+    <section class="login-arte" aria-hidden="true">
+        <img src="~/img/logo-branco.png" alt="" width="132">
+        <div>
+            <h2>Cada contato, um associado em potencial.</h2>
+            <div class="colunas-deco">
+                <div><span></span><span></span><span></span></div>
+                <div><span></span><span></span></div>
+                <div><span></span><span></span><span></span><span></span></div>
+                <div><span></span></div>
+            </div>
+            <p>Funis, atendimento e acompanhamento da equipe comercial da CDL Uberlândia em um só lugar.</p>
+        </div>
+        <small style="color:#7f93b8">CRM CDL · uso interno</small>
+    </section>
+    <section class="login-form">
+        <form method="post" asp-antiforgery="true" action="/entrar">
+            <img src="~/img/logo.png" alt="CDL Uberlândia" width="120" style="margin-bottom:8px">
+            <h1>Entrar no CRM</h1>
+            <p class="muted" style="margin:-6px 0 6px">Use o e-mail e a senha cadastrados pelo administrador.</p>
+            @if (ViewBag.Erro is string erro) { <div class="alerta-erro" role="alert">@erro</div> }
+            <label class="campo">E-mail<input type="email" name="email" value="@ViewBag.Email" autocomplete="username" required autofocus></label>
+            <label class="campo">Senha<input type="password" name="senha" autocomplete="current-password" required></label>
+            <input type="hidden" name="returnUrl" value="@Model">
+            <button class="btn pri">Entrar</button>
+        </form>
+    </section>
+</div>
+</body>
+</html>

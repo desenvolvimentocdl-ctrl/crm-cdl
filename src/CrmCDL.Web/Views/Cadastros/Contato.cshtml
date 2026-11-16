@@ -1,0 +1,38 @@
+@model Contato
+@{
+    ViewData["Title"] = Model.Nome;
+    var usuarios = (List<Usuario>)ViewBag.Usuarios;
+}
+<header class="topo">
+    <a class="ico-btn" href="/contatos" aria-label="Voltar"><svg><use href="#i-voltar"/></svg></a>
+    <span class="av">@Texto.Iniciais(Model.Nome)</span>
+    <h1>@Model.Nome</h1>
+    @if (User.IsInRole("Gestor") || User.IsInRole("Administrador"))
+    {
+        <form method="post" asp-antiforgery="true" action="/contatos/@Model.Id/excluir" onsubmit="return confirm('Excluir este contato?')"><button class="btn perigo sm">Excluir</button></form>
+    }
+</header>
+<div class="lead-corpo">
+    <form method="post" asp-antiforgery="true" action="/contatos/@Model.Id" class="secao pilha">
+        <h3>Dados do contato <button class="btn pri sm">Salvar</button></h3>
+        <label class="campo">Nome<input name="Nome" value="@Model.Nome" required></label>
+        <div class="grid2">
+            <label class="campo">Celular / WhatsApp<input name="Celular" value="@Model.Celular"></label>
+            <label class="campo">Telefone<input name="Telefone" value="@Model.Telefone"></label>
+        </div>
+        <label class="campo">E-mail<input name="Email" type="email" value="@Model.Email"></label>
+        <div class="grid2">
+            <label class="campo">Cargo<input name="Cargo" value="@Model.Cargo"></label>
+            <label class="campo">CPF<input name="Cpf" value="@Model.Cpf"></label>
+        </div>
+        <label class="campo">Empresa<input name="empresaNome" value="@Model.Empresa?.Nome" list="dl-empresas" data-sugere="empresas" autocomplete="off"></label>
+        <datalist id="dl-empresas"></datalist>
+        <label class="campo">Responsável
+            <select name="ResponsavelId"><option value="">—</option>@foreach (var u in usuarios) { <option value="@u.Id" selected="@(u.Id == Model.ResponsavelId)">@u.Nome</option> }</select>
+        </label>
+        <input type="hidden" name="AceitouTermos" value="false"><label class="chk"><input type="checkbox" name="AceitouTermos" value="true" checked="@Model.AceitouTermos">Aceitou os termos de uso</label>
+        <input type="hidden" name="OptInMarketing" value="false"><label class="chk"><input type="checkbox" name="OptInMarketing" value="true" checked="@Model.OptInMarketing">Aceita receber comunicações de marketing</label>
+        @await Html.PartialAsync("_Campos", new CamposVm((List<CampoPersonalizado>)ViewBag.Campos, (Dictionary<int, string>)ViewBag.Valores))
+    </form>
+    <div class="pilha">@await Html.PartialAsync("_LeadsVinculados", (List<Lead>)ViewBag.Leads)</div>
+</div>
