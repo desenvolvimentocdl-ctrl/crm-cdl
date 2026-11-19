@@ -46,6 +46,24 @@ svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.8;stroke
 .av.sm{width:22px;height:22px;font-size:9px}
 .nav .ico-btn{color:#8ea3c7}
 .nav .ico-btn:hover{color:#fff;background:rgba(255,255,255,.08)}
+.nav .sino{position:relative;text-decoration:none!important}
+.nav .sino.on{color:#fff;background:rgba(47,123,255,.18)}
+.badge{position:absolute;top:1px;right:0;min-width:16px;height:16px;padding:0 4px;border-radius:8px;background:var(--erro);color:#fff;font-size:9.5px;font-weight:800;
+  display:grid;place-items:center;line-height:1;box-shadow:0 0 0 2px var(--navy);animation:entra .3s var(--ease)}
+.badge[hidden]{display:none}
+
+/* ---------- notificações ---------- */
+.notifs{list-style:none;margin:0;padding:0}
+.notifs li + li{border-top:1px solid var(--line)}
+.notif{display:flex;align-items:center;gap:12px;padding:12px 16px;color:var(--ink);text-decoration:none!important;transition:background .15s}
+.notif:hover{background:var(--blue-50)}
+.notif.nova{background:linear-gradient(90deg,var(--blue-50),#fff 70%)}
+.notif.nova .notif-tx{font-weight:700}
+.notif-ico{width:32px;height:32px;border-radius:50%;display:grid;place-items:center;background:var(--blue-100);color:var(--blue);flex:none}
+.notif.hoje .notif-ico{background:var(--alerta-50);color:var(--alerta)}
+.notif.atrasada .notif-ico{background:var(--erro-50);color:var(--erro)}
+.notif-tx{flex:1;min-width:0;font-weight:500;word-break:break-word}
+.notif-tx small{display:block;color:var(--muted);font-size:11.5px;font-weight:500;margin-top:1px}
 
 .main{margin-left:var(--nav);min-height:100vh;display:flex;flex-direction:column}
 

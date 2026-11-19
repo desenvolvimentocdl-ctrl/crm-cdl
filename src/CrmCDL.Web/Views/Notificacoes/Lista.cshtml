@@ -1,0 +1,45 @@
+@model List<Notificacao>
+@{
+    ViewData["Title"] = "Notificações";
+    var naoLidas = Model.Count(n => !n.Lida);
+}
+<header class="topo">
+    <h1>Notificações @if (naoLidas > 0) { <span class="pill num">@naoLidas novas</span> }</h1>
+    @if (naoLidas > 0)
+    {
+        <form method="post" asp-antiforgery="true" action="/notificacoes/lidas">
+            <button class="btn">Marcar todas como lidas</button>
+        </form>
+    }
+</header>
+<div class="pagina" style="max-width:860px">
+    <div class="card" style="overflow:hidden">
+        @if (Model.Count == 0)
+        {
+            <div class="vazio">Nenhuma notificação por enquanto. Aqui aparecem leads e tarefas que passarem para você e lembretes de tarefas do dia.</div>
+        }
+        else
+        {
+            <ul class="notifs">
+                @foreach (var n in Model)
+                {
+                    var (icone, classe) = n.Tipo switch
+                    {
+                        TipoNotificacao.LeadAtribuido => ("i-funil", ""),
+                        TipoNotificacao.TarefaAtrasada => ("i-relogio", "atrasada"),
+                        TipoNotificacao.TarefaHoje => ("i-relogio", "hoje"),
+                        _ => ("i-tarefa", "")
+                    };
+                    <li>
+                        <a class="notif @(n.Lida ? "" : "nova") @classe" href="/notificacoes/@n.Id">
+                            <span class="notif-ico"><svg><use href="#@icone"/></svg></span>
+                            <span class="notif-tx">@n.Texto<small>@Hora.Relativa(n.CriadoEm)</small></span>
+                            @if (!n.Lida) { <span class="ponto" style="background:var(--blue)" aria-label="Não lida"></span> }
+                        </a>
+                    </li>
+                }
+            </ul>
+        }
+    </div>
+    <p class="muted" style="font-size:12px;margin-top:10px">Mostrando as 100 mais recentes. Lembretes de tarefas são criados automaticamente a cada 5 minutos.</p>
+</div>

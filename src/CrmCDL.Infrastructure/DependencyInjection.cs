@@ -24,6 +24,7 @@ public static class DependencyInjection
 
         services.AddScoped<LeadService>();
         services.AddScoped<ConfiguracaoService>();
+        services.AddScoped<NotificacaoService>();
         return services;
     }
 }

@@ -7,6 +7,10 @@
 <header class="topo">
     <h1>Contatos <span class="pill cinza num">@total</span></h1>
     <form method="get" class="busca"><svg><use href="#i-busca"/></svg><input type="search" name="busca" value="@ViewBag.Busca" placeholder="Nome, telefone, e-mail, CPF…" aria-label="Buscar contatos"></form>
+    @if (ViewBag.PodeExportar == true)
+    {
+        <a class="btn" href="/contatos/exportar?busca=@Uri.EscapeDataString((string?)ViewBag.Busca ?? "")" title="Baixar os contatos desta busca em planilha do Excel"><svg><use href="#i-baixar"/></svg>Exportar</a>
+    }
     <button class="btn pri" data-abre="#novo"><svg><use href="#i-mais"/></svg>Novo contato</button>
 </header>
 <div class="pagina">

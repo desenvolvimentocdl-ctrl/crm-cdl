@@ -37,6 +37,8 @@
             <input type="checkbox" name="fechados" value="true" checked="@Model.Fechados" onchange="this.form.submit()"> Fechados antigos
         </label>
     </form>
+    <a class="btn" href="/leads/exportar?funil=@Model.Funil.Id&busca=@Uri.EscapeDataString(Model.Busca ?? "")&responsavel=@Model.Responsavel&fechados=@(Model.Fechados ? "true" : "false")"
+       title="Baixar os leads deste funil, com a busca e os filtros atuais, em planilha do Excel"><svg><use href="#i-baixar"/></svg>Exportar</a>
     <button class="btn pri" type="button" data-abre="#novo-lead"><svg><use href="#i-mais"/></svg>Novo lead</button>
 </header>
 

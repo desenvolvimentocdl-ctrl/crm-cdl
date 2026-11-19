@@ -13,6 +13,8 @@ Visual com as cores do novo site (`desing-novo-site---cdl`) e a logo da CDL.
 | **Contatos e empresas** | Lista com busca e paginação; ficha com campos fixos e personalizados; leads vinculados. |
 | **Tarefas** | Em aberto, atrasadas, para hoje, concluídas; concluir com resultado. |
 | **Painel (gestores)** | Vendas ganhas, novos leads, conversão, valor em negociação, leads por etapa, motivos de perda e desempenho por responsável, por período. |
+| **Exportar para Excel** | Botão "Exportar" no quadro baixa os leads do funil com a mesma busca e os mesmos filtros da tela (inclui campos personalizados). Em Contatos, gestores exportam a busca atual. Vendedor(a) só exporta os próprios leads. |
+| **Notificações** | Sino no menu com o número de não lidas (atualiza sozinho a cada minuto). Avisa quando alguém cria ou passa um lead ou uma tarefa para você, e lembra das tarefas que vencem hoje e das que ficaram atrasadas (verificação a cada 5 minutos). |
 | **Configurações (administrador)** | Funis e etapas (criar, renomear, cor, reordenar arrastando, arquivar); campos personalizados; usuários e perfis; motivos de perda; importação da Kommo. |
 
 **Perfis:** Vendedor(a) vê só os próprios leads · Gestor vê todos os leads e o painel · Administrador também configura o sistema.
@@ -26,7 +28,19 @@ src/
   CrmCDL.Infrastructure  banco (AppDbContext, migrações) e importador da Kommo
   CrmCDL.Web             telas (MVC + Razor), CSS e JS sem bibliotecas
 banco/criar-banco.sql    cria o banco CrmCDL e o usuário próprio
+tests/
+  CrmCDL.Tests           testes automáticos (xUnit + SQLite em memória)
 ```
+
+## Testes automáticos
+
+```bash
+dotnet test
+```
+
+Cobrem as regras principais: quem vê o quê (vendedor x gestor), criação de lead, troca de etapa (ganho, perda com motivo, reabertura),
+permissões de edição, tarefas e exclusão; as notificações e os lembretes; e os filtros e o arquivo Excel da exportação.
+Cada teste usa um banco SQLite novo em memória, então não precisam de MySQL.
 
 ## Banco de dados
 

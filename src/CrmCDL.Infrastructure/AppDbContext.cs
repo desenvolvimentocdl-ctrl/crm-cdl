@@ -21,6 +21,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<CampoPersonalizado> Campos => Set<CampoPersonalizado>();
     public DbSet<CampoOpcao> CampoOpcoes => Set<CampoOpcao>();
     public DbSet<ValorCampo> ValoresCampo => Set<ValorCampo>();
+    public DbSet<Notificacao> Notificacoes => Set<Notificacao>();
 
     protected override void OnModelCreating(ModelBuilder b)
     {
@@ -146,6 +147,17 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             e.Property(x => x.Valor).HasColumnType("text");
             e.HasOne(x => x.Campo).WithMany().HasForeignKey(x => x.CampoId).OnDelete(DeleteBehavior.Cascade);
             e.HasIndex(x => new { x.Entidade, x.RegistroId, x.CampoId }).IsUnique();
+        });
+
+        b.Entity<Notificacao>(e =>
+        {
+            e.Property(x => x.Texto).HasMaxLength(500);
+            e.Property(x => x.Chave).HasMaxLength(80);
+            e.Ignore(x => x.Link);
+            e.HasOne(x => x.Usuario).WithMany().HasForeignKey(x => x.UsuarioId).OnDelete(DeleteBehavior.Cascade);
+            e.HasOne(x => x.Lead).WithMany().HasForeignKey(x => x.LeadId).OnDelete(DeleteBehavior.Cascade);
+            e.HasIndex(x => new { x.UsuarioId, x.Lida, x.CriadoEm });
+            e.HasIndex(x => new { x.UsuarioId, x.Chave }).IsUnique();
         });
     }
 }

@@ -430,6 +430,50 @@ namespace CrmCDL.Infrastructure.Migrations
                     b.ToTable("MotivosPerda");
                 });
 
+            modelBuilder.Entity("CrmCDL.Domain.Notificacao", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Chave")
+                        .HasMaxLength(80)
+                        .HasColumnType("varchar(80)");
+
+                    b.Property<DateTime>("CriadoEm")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<int?>("LeadId")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("Lida")
+                        .HasColumnType("tinyint(1)");
+
+                    b.Property<string>("Texto")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("varchar(500)");
+
+                    b.Property<int>("Tipo")
+                        .HasColumnType("int");
+
+                    b.Property<int>("UsuarioId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("LeadId");
+
+                    b.HasIndex("UsuarioId", "Chave")
+                        .IsUnique();
+
+                    b.HasIndex("UsuarioId", "Lida", "CriadoEm");
+
+                    b.ToTable("Notificacoes");
+                });
+
             modelBuilder.Entity("CrmCDL.Domain.Tag", b =>
                 {
                     b.Property<int>("Id")
@@ -726,6 +770,24 @@ namespace CrmCDL.Infrastructure.Migrations
                     b.Navigation("Lead");
 
                     b.Navigation("Tag");
+                });
+
+            modelBuilder.Entity("CrmCDL.Domain.Notificacao", b =>
+                {
+                    b.HasOne("CrmCDL.Domain.Lead", "Lead")
+                        .WithMany()
+                        .HasForeignKey("LeadId")
+                        .OnDelete(DeleteBehavior.Cascade);
+
+                    b.HasOne("CrmCDL.Domain.Usuario", "Usuario")
+                        .WithMany()
+                        .HasForeignKey("UsuarioId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Lead");
+
+                    b.Navigation("Usuario");
                 });
 
             modelBuilder.Entity("CrmCDL.Domain.Tarefa", b =>

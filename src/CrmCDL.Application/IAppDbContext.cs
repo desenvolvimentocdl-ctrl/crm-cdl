@@ -20,6 +20,7 @@ public interface IAppDbContext
     DbSet<CampoPersonalizado> Campos { get; }
     DbSet<CampoOpcao> CampoOpcoes { get; }
     DbSet<ValorCampo> ValoresCampo { get; }
+    DbSet<Notificacao> Notificacoes { get; }
     Task<int> SaveChangesAsync(CancellationToken ct = default);
 }
 

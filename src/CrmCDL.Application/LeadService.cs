@@ -12,6 +12,10 @@ public class LeadService(IAppDbContext db)
     public IQueryable<Lead> Visiveis(UsuarioAtual u)
         => u.VeTudo ? db.Leads : db.Leads.Where(l => l.ResponsavelId == u.Id);
 
+    /// <summary>Leads do quadro (e da exportação) com busca, responsável e fechados, respeitando o que o usuário pode ver.</summary>
+    public IQueryable<Lead> Filtrar(FiltroLeads filtro, UsuarioAtual u, DateTime agoraUtc)
+        => Consultas.FiltrarLeads(Visiveis(u), filtro, agoraUtc);
+
     public async Task<Lead> ObterAsync(int id, UsuarioAtual u)
         => await Visiveis(u).FirstOrDefaultAsync(l => l.Id == id)
            ?? throw new RegraNegocioException("Lead não encontrado ou sem permissão de acesso.");
@@ -51,6 +55,7 @@ public class LeadService(IAppDbContext db)
         }
         lead.Atividades.Add(new Atividade { Tipo = TipoAtividade.Criacao, UsuarioId = u.Id, Texto = $"Lead criado na etapa \"{etapa.Nome}\"" });
         db.Leads.Add(lead);
+        NotificacaoService.Avisar(db, responsavel, u, TipoNotificacao.LeadAtribuido, $"{u.Nome} criou o lead \"{lead.Titulo}\" para você", lead);
         await db.SaveChangesAsync();
         return lead;
     }
@@ -89,6 +94,7 @@ public class LeadService(IAppDbContext db)
             var nome = responsavelId is int r ? await db.Usuarios.Where(x => x.Id == r).Select(x => x.Nome).FirstOrDefaultAsync() : "ninguém";
             lead.ResponsavelId = responsavelId;
             db.Atividades.Add(new Atividade { LeadId = lead.Id, Tipo = TipoAtividade.MudancaResponsavel, UsuarioId = u.Id, Texto = $"Responsável alterado para {nome}" });
+            NotificacaoService.Avisar(db, responsavelId, u, TipoNotificacao.LeadAtribuido, $"{u.Nome} passou o lead \"{lead.Titulo}\" para você", lead);
         }
         lead.AtualizadoEm = DateTime.UtcNow;
         await db.SaveChangesAsync();
@@ -127,6 +133,7 @@ public class LeadService(IAppDbContext db)
         if (leadId is int id) await ObterAsync(id, u);
         var resp = u.VeTudo ? (responsavelId ?? u.Id) : u.Id;
         db.Tarefas.Add(new Tarefa { LeadId = leadId, Tipo = tipo, Texto = texto.Trim(), Prazo = prazo, ResponsavelId = resp, CriadoPorId = u.Id });
+        NotificacaoService.Avisar(db, resp, u, TipoNotificacao.TarefaAtribuida, $"{u.Nome} criou uma tarefa para você ({(prazoLocal ?? prazo):dd/MM HH:mm}): {texto.Trim()}", leadId: leadId);
         if (leadId is int l)
             db.Atividades.Add(new Atividade { LeadId = l, Tipo = TipoAtividade.TarefaCriada, UsuarioId = u.Id, Texto = $"Tarefa para {(prazoLocal ?? prazo):dd/MM HH:mm}: {texto.Trim()}" });
         await db.SaveChangesAsync();

@@ -175,6 +175,25 @@ public class Atividade
     public DateTime CriadoEm { get; set; } = DateTime.UtcNow;
 }
 
+public enum TipoNotificacao { LeadAtribuido = 0, TarefaAtribuida = 1, TarefaHoje = 2, TarefaAtrasada = 3 }
+
+/// <summary>Aviso para um usuário (sino no menu). Chave evita repetir o mesmo lembrete automático.</summary>
+public class Notificacao
+{
+    public int Id { get; set; }
+    public int UsuarioId { get; set; }
+    public Usuario? Usuario { get; set; }
+    public TipoNotificacao Tipo { get; set; }
+    public string Texto { get; set; } = "";
+    public int? LeadId { get; set; }
+    public Lead? Lead { get; set; }
+    public string? Chave { get; set; }
+    public bool Lida { get; set; }
+    public DateTime CriadoEm { get; set; } = DateTime.UtcNow;
+
+    public string Link => LeadId is int id ? $"/leads/{id}" : "/tarefas";
+}
+
 public enum EntidadeCampo { Lead = 0, Contato = 1, Empresa = 2 }
 
 public enum TipoCampo { Texto = 0, TextoLongo = 1, Numero = 2, Data = 3, DataHora = 4, Lista = 5, MultiplaEscolha = 6, Url = 7, Checkbox = 8, Rastreamento = 9 }

@@ -2,6 +2,7 @@ using CrmCDL.Application;
 using CrmCDL.Domain;
 using CrmCDL.Infrastructure;
 using CrmCDL.Web.Infra;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -17,20 +18,54 @@ public class CadastrosController(AppDbContext db, ConfiguracaoService config, Le
     [HttpGet("/contatos")]
     public async Task<IActionResult> Contatos(string? busca, int pagina = 1)
     {
-        var q = db.Contatos.AsQueryable();
-        if (!string.IsNullOrWhiteSpace(busca))
-        {
-            var b = busca.Trim();
-            q = q.Where(c => c.Nome.Contains(b) || (c.Email != null && c.Email.Contains(b)) || (c.Celular != null && c.Celular.Contains(b))
-                             || (c.Telefone != null && c.Telefone.Contains(b)) || (c.Cpf != null && c.Cpf.Contains(b)) || (c.Empresa != null && c.Empresa.Nome.Contains(b)));
-        }
+        var q = Consultas.FiltrarContatos(db.Contatos, busca);
         ViewBag.Total = await q.CountAsync();
+        ViewBag.PodeExportar = Eu.VeTudo;
         ViewBag.Pagina = Math.Max(1, pagina);
         ViewBag.PorPagina = PorPagina;
         ViewBag.Busca = busca;
         var lista = await q.Include(c => c.Empresa).Include(c => c.Responsavel).OrderBy(c => c.Nome)
             .Skip((Math.Max(1, pagina) - 1) * PorPagina).Take(PorPagina).ToListAsync();
         return View(lista);
+    }
+
+    /// <summary>Planilha Excel dos contatos da busca atual. Só gestores: a lista inteira tem CPF e telefone de todo mundo.</summary>
+    [Authorize(Policy = Politicas.Gestor), HttpGet("/contatos/exportar")]
+    public async Task<IActionResult> ExportarContatos(string? busca)
+    {
+        var q = Consultas.FiltrarContatos(db.Contatos, busca);
+        var lista = await q.OrderBy(c => c.Nome)
+            .Select(c => new
+            {
+                c.Id, c.Nome, c.Cargo, c.Celular, c.Telefone, c.Email, c.Cpf,
+                Empresa = c.Empresa != null ? c.Empresa.Nome : null,
+                Responsavel = c.Responsavel != null ? c.Responsavel.Nome : null,
+                c.AceitouTermos, c.OptInMarketing, c.CriadoEm,
+                Leads = c.Leads.Count
+            })
+            .Take(100_000).ToListAsync();
+
+        var campos = await db.Campos.Include(c => c.Opcoes).Where(c => c.Entidade == EntidadeCampo.Contato && c.Ativo)
+            .OrderBy(c => c.Ordem).ThenBy(c => c.Id).ToListAsync();
+        var valores = (await db.ValoresCampo
+                .Where(v => v.Entidade == EntidadeCampo.Contato && q.Select(c => c.Id).Contains(v.RegistroId))
+                .Select(v => new { v.RegistroId, v.CampoId, v.Valor }).ToListAsync())
+            .ToDictionary(v => (v.RegistroId, v.CampoId), v => v.Valor);
+
+        var colunas = new List<ColunaPlanilha>
+        {
+            new("Id", FormatoColuna.Inteiro), new("Nome"), new("Cargo"), new("Celular"), new("Telefone"), new("E-mail"), new("CPF"),
+            new("Empresa"), new("Responsável"), new("Aceitou termos"), new("Aceita marketing"), new("Leads", FormatoColuna.Inteiro),
+            new("Criado em", FormatoColuna.DataHora)
+        };
+        colunas.AddRange(campos.Select(c => new ColunaPlanilha(c.Nome)));
+        var dados = lista.Select(c => new object?[]
+        {
+            c.Id, c.Nome, c.Cargo, c.Celular, c.Telefone, c.Email, c.Cpf, c.Empresa, c.Responsavel,
+            c.AceitouTermos, c.OptInMarketing, c.Leads, Hora.Local(c.CriadoEm)
+        }.Concat(campos.Select(f => (object?)Consultas.TextoDoCampo(f, valores.GetValueOrDefault((c.Id, f.Id))))).ToArray());
+
+        return File(Planilha.Gerar("Contatos", colunas, dados), Planilha.TipoConteudo, Planilha.NomeArquivo("contatos"));
     }
 
     [HttpPost("/contatos/novo")]

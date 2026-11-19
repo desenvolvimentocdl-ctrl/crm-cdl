@@ -29,6 +29,33 @@
     return r.json();
   }
 
+  // ---------- sino de notificações: atualiza o número a cada minuto sem recarregar ----------
+  const badge = $("[data-notif]");
+  if (badge) {
+    const tituloOriginal = document.title;
+    let ultima = badge.hidden ? 0 : parseInt(badge.textContent, 10) || 0;
+    const mostrar = (n) => {
+      badge.hidden = n === 0;
+      badge.textContent = n > 99 ? "99+" : String(n);
+      document.title = n > 0 ? `(${n}) ${tituloOriginal}` : tituloOriginal;
+    };
+    mostrar(ultima);
+    let timer = null;
+    const verificar = async () => {
+      if (document.hidden) return;
+      try {
+        const r = await fetch("/notificacoes/contagem", { headers: { Accept: "application/json" }, cache: "no-store" });
+        if (r.redirected || !r.ok) { clearInterval(timer); return; } // sessão expirou
+        const n = (await r.json()).naoLidas || 0;
+        if (n > ultima) aviso(n - ultima === 1 ? "Você tem uma nova notificação." : `Você tem ${n - ultima} novas notificações.`);
+        ultima = n;
+        mostrar(n);
+      } catch { /* sem rede: tenta de novo no próximo minuto */ }
+    };
+    timer = setInterval(verificar, 60000);
+    document.addEventListener("visibilitychange", () => { if (!document.hidden) verificar(); });
+  }
+
   // ---------- modais ----------
   document.addEventListener("click", (e) => {
     const abre = e.target.closest("[data-abre]");
