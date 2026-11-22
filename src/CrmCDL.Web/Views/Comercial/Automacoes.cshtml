@@ -1,0 +1,38 @@
+@model List<Etapa>
+@{
+    ViewData["Title"] = "Automações";
+    var funis = (List<Funil>)ViewBag.Funis;
+    var funil = (Funil)ViewBag.Funil;
+}
+@await Html.PartialAsync("~/Views/Configuracoes/_Abas.cshtml", "automacoes")
+<div class="pagina pilha" style="max-width:960px">
+    <div class="linha" style="justify-content:space-between">
+        <p class="muted" style="margin:0">Quando um lead <b>entra</b> na etapa, o CRM cria a tarefa sozinho para o responsável do lead.</p>
+        <form method="get"><select name="funil" onchange="this.form.submit()" aria-label="Funil" style="width:auto">@foreach (var f in funis) { <option value="@f.Id" selected="@(f.Id == funil.Id)">@f.Nome</option> }</select></form>
+    </div>
+    @foreach (var e in Model)
+    {
+        <section class="secao">
+            <h3><span class="linha" style="gap:8px"><span class="ponto" style="background:@e.Cor"></span>@e.Nome</span><span class="muted" style="text-transform:none;letter-spacing:0">@e.Automacoes.Count regra(s)</span></h3>
+            @foreach (var a in e.Automacoes.OrderBy(a => a.PrazoDias))
+            {
+                <form method="post" asp-antiforgery="true" action="/configuracoes/automacoes" class="linha regra" style="@(a.Ativo ? "" : "opacity:.55")">
+                    <input type="hidden" name="id" value="@a.Id"><input type="hidden" name="etapaId" value="@e.Id">
+                    <select name="tipo" aria-label="Tipo" style="width:auto">@foreach (var t in Enum.GetValues<TipoTarefa>()) { <option value="@t" selected="@(t == a.TipoTarefa)">@Texto.NomeTarefa(t)</option> }</select>
+                    <input name="texto" value="@a.Texto" required style="flex:1 1 220px" aria-label="Tarefa">
+                    <label class="linha" style="gap:4px;flex-wrap:nowrap">em <input name="prazoDias" type="number" min="0" max="365" value="@a.PrazoDias" style="width:64px" aria-label="Dias"> dia(s) às <input name="horaPrazo" type="number" min="0" max="23" value="@a.HoraPrazo" style="width:58px" aria-label="Hora">h</label>
+                    <label class="chk"><input type="checkbox" name="ativo" value="true" checked="@a.Ativo">ativa</label><input type="hidden" name="ativo" value="false">
+                    <button class="btn sm">Salvar</button>
+                    <button class="btn sm perigo" name="excluir" value="true" formnovalidate>Remover</button>
+                </form>
+            }
+            <form method="post" asp-antiforgery="true" action="/configuracoes/automacoes" class="linha regra">
+                <input type="hidden" name="etapaId" value="@e.Id">
+                <select name="tipo" aria-label="Tipo" style="width:auto">@foreach (var t in Enum.GetValues<TipoTarefa>()) { <option value="@t">@Texto.NomeTarefa(t)</option> }</select>
+                <input name="texto" required placeholder="Nova tarefa automática, ex.: Enviar apresentação" style="flex:1 1 220px" aria-label="Tarefa">
+                <label class="linha" style="gap:4px;flex-wrap:nowrap">em <input name="prazoDias" type="number" min="0" max="365" value="1" style="width:64px" aria-label="Dias"> dia(s) às <input name="horaPrazo" type="number" min="0" max="23" value="9" style="width:58px" aria-label="Hora">h</label>
+                <button class="btn sm pri"><svg><use href="#i-mais"/></svg>Adicionar</button>
+            </form>
+        </section>
+    }
+</div>

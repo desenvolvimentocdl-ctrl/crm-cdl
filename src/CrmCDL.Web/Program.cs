@@ -10,6 +10,8 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddInfraestrutura(builder.Configuration);
 builder.Services.AddScoped<IPasswordHasher<Usuario>, PasswordHasher<Usuario>>();
 builder.Services.AddHostedService<LembreteTarefas>();
+builder.Services.Configure<AssistenteOptions>(builder.Configuration.GetSection("Assistente"));
+builder.Services.AddScoped<Assistente>();
 
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
     .AddCookie(o =>
@@ -28,6 +30,19 @@ builder.Services.AddAuthorization(o =>
     o.AddPolicy(Politicas.Gestor, p => p.RequireRole(nameof(Perfil.Gestor), nameof(Perfil.Administrador)));
     o.AddPolicy(Politicas.Admin, p => p.RequireRole(nameof(Perfil.Administrador)));
     o.FallbackPolicy = new Microsoft.AspNetCore.Authorization.AuthorizationPolicyBuilder().RequireAuthenticatedUser().Build();
+});
+
+// Formulários do site: no máximo 20 envios por minuto por endereço IP (proteção contra spam).
+builder.Services.AddRateLimiter(o =>
+{
+    o.RejectionStatusCode = 429;
+    o.AddPolicy("captura", ctx => System.Threading.RateLimiting.RateLimitPartition.GetFixedWindowLimiter(
+        ctx.Connection.RemoteIpAddress?.ToString() ?? "?",
+        _ => new System.Threading.RateLimiting.FixedWindowRateLimiterOptions { PermitLimit = 20, Window = TimeSpan.FromMinutes(1) }));
+    // Assistente de IA: até 15 perguntas por minuto por usuário (controla o custo da API).
+    o.AddPolicy("assistente", ctx => System.Threading.RateLimiting.RateLimitPartition.GetFixedWindowLimiter(
+        ctx.User.Identity?.Name ?? "?",
+        _ => new System.Threading.RateLimiting.FixedWindowRateLimiterOptions { PermitLimit = 15, Window = TimeSpan.FromMinutes(1) }));
 });
 
 builder.Services.AddAntiforgery(o => o.HeaderName = "X-CSRF");
@@ -49,6 +64,7 @@ if (!app.Environment.IsDevelopment())
 }
 app.UseStaticFiles();
 app.UseRouting();
+app.UseRateLimiter();
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();

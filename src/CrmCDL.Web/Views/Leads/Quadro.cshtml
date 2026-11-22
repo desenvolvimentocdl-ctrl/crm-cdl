@@ -1,4 +1,5 @@
 @model QuadroVm
+@using CrmCDL.Application
 @{
     ViewData["Title"] = Model.Funil.Nome;
     ViewData["BodyClass"] = "quadro";
@@ -36,7 +37,11 @@
         <label class="chk" title="Por padrão, ganhos e perdidos mostram só os últimos 30 dias">
             <input type="checkbox" name="fechados" value="true" checked="@Model.Fechados" onchange="this.form.submit()"> Fechados antigos
         </label>
+        <label class="chk" title="Leads em aberto sem movimentação há @Consultas.DiasParado dias ou mais">
+            <input type="checkbox" name="parados" value="true" checked="@((bool)(ViewBag.Parados ?? false))" onchange="this.form.submit()"> Só parados
+        </label>
     </form>
+    <a class="btn" href="/leads/lista?funil=@Model.Funil.Id" title="Ver em tabela, com ações em massa">Lista</a>
     <a class="btn" href="/leads/exportar?funil=@Model.Funil.Id&busca=@Uri.EscapeDataString(Model.Busca ?? "")&responsavel=@Model.Responsavel&fechados=@(Model.Fechados ? "true" : "false")"
        title="Baixar os leads deste funil, com a busca e os filtros atuais, em planilha do Excel"><svg><use href="#i-baixar"/></svg>Exportar</a>
     <button class="btn pri" type="button" data-abre="#novo-lead"><svg><use href="#i-mais"/></svg>Novo lead</button>
@@ -74,6 +79,10 @@
                             else
                             {
                                 <span class="c-prazo sem">@Hora.Relativa(c.AtualizadoEm)</span>
+                            }
+                            @if (!e.Fechada && c.AtualizadoEm < Model.Agora.AddDays(-Consultas.DiasParado))
+                            {
+                                <span class="pill alerta" title="Sem movimentação desde @Hora.Local(c.AtualizadoEm).ToString("dd/MM")">parado @((int)(Model.Agora - c.AtualizadoEm).TotalDays)d</span>
                             }
                             @foreach (var t in c.Tags.Take(2)) { <span class="tag">@t</span> }
                             @if (c.Responsavel is not null) { <span class="av sm" title="@c.Responsavel">@Texto.Iniciais(c.Responsavel)</span> }
@@ -114,12 +123,15 @@
                 </label>
                 <label class="campo">Valor (R$)<input name="Valor" type="number" min="0" step="0.01" value="0"></label>
             </div>
-            <div class="grid2">
+            <label class="campo">Previsão de fechamento<input name="DataPrevista" type="date"></label>
+            <div class="grid2" data-duplicados>
                 <label class="campo">Contato<input name="ContatoNome"></label>
-                <label class="campo">Telefone / WhatsApp<input name="ContatoTelefone"></label>
+                <label class="campo">Telefone / WhatsApp<input name="ContatoTelefone" data-dup="fone"></label>
             </div>
+            <input type="hidden" name="ContatoId" value="">
+            <div class="aviso-dup" hidden></div>
             <div class="grid2">
-                <label class="campo">E-mail<input name="ContatoEmail" type="email"></label>
+                <label class="campo">E-mail<input name="ContatoEmail" type="email" data-dup="email"></label>
                 <label class="campo">Empresa<input name="EmpresaNome"></label>
             </div>
             @if (Model.Usuarios.Count > 0)

@@ -1,0 +1,36 @@
+@model List<Usuario>
+@{
+    ViewData["Title"] = "Metas";
+    int ano = ViewBag.Ano, mes = ViewBag.Mes;
+    var metas = (Dictionary<int, Meta>)ViewBag.Metas;
+    var nomeMes = new DateTime(ano, mes, 1).ToString("MMMM 'de' yyyy", Hora.PtBr);
+    var ant = new DateTime(ano, mes, 1).AddMonths(-1);
+    var prox = new DateTime(ano, mes, 1).AddMonths(1);
+}
+<header class="topo">
+    <h1>Metas</h1>
+    <a class="btn sm" href="/metas?ano=@ant.Year&mes=@ant.Month" aria-label="Mês anterior">‹</a>
+    <b style="text-transform:capitalize;min-width:150px;text-align:center">@nomeMes</b>
+    <a class="btn sm" href="/metas?ano=@prox.Year&mes=@prox.Month" aria-label="Próximo mês">›</a>
+</header>
+<div class="pagina" style="max-width:820px">
+    <form method="post" asp-antiforgery="true" action="/metas" class="card rolavel" style="overflow:hidden">
+        <input type="hidden" name="ano" value="@ano"><input type="hidden" name="mes" value="@mes">
+        <table class="tabela">
+            <thead><tr><th>Pessoa</th><th>Meta em vendas (R$)</th><th>Meta em quantidade</th></tr></thead>
+            <tbody>
+            @foreach (var u in Model)
+            {
+                var m = metas.TryGetValue(u.Id, out var x) ? x : null;
+                <tr>
+                    <td><span class="nome"><span class="av sm">@Texto.Iniciais(u.Nome)</span>@u.Nome</span></td>
+                    <td><input name="valor[@u.Id]" type="number" min="0" step="0.01" value="@(m?.Valor.ToString(System.Globalization.CultureInfo.InvariantCulture))" placeholder="0"></td>
+                    <td><input name="qtd[@u.Id]" type="number" min="0" step="1" value="@m?.QtdVendas" placeholder="0"></td>
+                </tr>
+            }
+            </tbody>
+        </table>
+        <div class="modal-pe" style="border-radius:0"><button class="btn pri">Salvar metas</button></div>
+    </form>
+    <p class="muted" style="font-size:12px">O andamento das metas aparece no Painel. Deixe em branco quem não tem meta no mês.</p>
+</div>

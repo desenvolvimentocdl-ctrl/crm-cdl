@@ -1,5 +1,4 @@
 using CrmCDL.Application;
-using CrmCDL.Infrastructure.Kommo;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -19,12 +18,10 @@ public static class DependencyInjection
             m => m.EnableRetryOnFailure(3)));
         services.AddScoped<IAppDbContext>(sp => sp.GetRequiredService<AppDbContext>());
 
-        services.Configure<KommoOptions>(config.GetSection("Kommo"));
-        services.AddHttpClient<IImportadorKommo, ImportadorKommo>(c => c.Timeout = TimeSpan.FromSeconds(60));
-
         services.AddScoped<LeadService>();
         services.AddScoped<ConfiguracaoService>();
         services.AddScoped<NotificacaoService>();
+        services.AddScoped<CapturaService>();
         return services;
     }
 }

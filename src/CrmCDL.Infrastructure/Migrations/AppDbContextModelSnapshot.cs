@@ -55,6 +55,41 @@ namespace CrmCDL.Infrastructure.Migrations
                     b.ToTable("Atividades");
                 });
 
+            modelBuilder.Entity("CrmCDL.Domain.AutomacaoEtapa", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<bool>("Ativo")
+                        .HasColumnType("tinyint(1)");
+
+                    b.Property<int>("EtapaId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("HoraPrazo")
+                        .HasColumnType("int");
+
+                    b.Property<int>("PrazoDias")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Texto")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("varchar(500)");
+
+                    b.Property<int>("TipoTarefa")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("EtapaId");
+
+                    b.ToTable("Automacoes");
+                });
+
             modelBuilder.Entity("CrmCDL.Domain.CampoOpcao", b =>
                 {
                     b.Property<int>("Id")
@@ -154,6 +189,10 @@ namespace CrmCDL.Infrastructure.Migrations
                     b.Property<int?>("EmpresaId")
                         .HasColumnType("int");
 
+                    b.Property<string>("FoneDigitos")
+                        .HasMaxLength(60)
+                        .HasColumnType("varchar(60)");
+
                     b.Property<long?>("KommoId")
                         .HasColumnType("bigint");
 
@@ -174,7 +213,11 @@ namespace CrmCDL.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("Email");
+
                     b.HasIndex("EmpresaId");
+
+                    b.HasIndex("FoneDigitos");
 
                     b.HasIndex("KommoId");
 
@@ -265,6 +308,9 @@ namespace CrmCDL.Infrastructure.Migrations
                     b.Property<int>("Ordem")
                         .HasColumnType("int");
 
+                    b.Property<int>("Probabilidade")
+                        .HasColumnType("int");
+
                     b.Property<int>("Tipo")
                         .HasColumnType("int");
 
@@ -275,6 +321,70 @@ namespace CrmCDL.Infrastructure.Migrations
                     b.HasIndex("KommoId");
 
                     b.ToTable("Etapas");
+                });
+
+            modelBuilder.Entity("CrmCDL.Domain.FormularioCaptura", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<bool>("Ativo")
+                        .HasColumnType("tinyint(1)");
+
+                    b.Property<DateTime>("CriadoEm")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<int>("Distribuicao")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("EtapaId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("FunilId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Nome")
+                        .IsRequired()
+                        .HasMaxLength(120)
+                        .HasColumnType("varchar(120)");
+
+                    b.Property<string>("ParticipantesIds")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("varchar(500)");
+
+                    b.Property<int>("ProximoDoRodizio")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Recebidos")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("ResponsavelFixoId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Token")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("varchar(64)");
+
+                    b.Property<DateTime?>("UltimoRecebimento")
+                        .HasColumnType("datetime(6)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("EtapaId");
+
+                    b.HasIndex("FunilId");
+
+                    b.HasIndex("ResponsavelFixoId");
+
+                    b.HasIndex("Token")
+                        .IsUnique();
+
+                    b.ToTable("Formularios");
                 });
 
             modelBuilder.Entity("CrmCDL.Domain.Funil", b =>
@@ -323,6 +433,9 @@ namespace CrmCDL.Infrastructure.Migrations
                     b.Property<DateTime>("CriadoEm")
                         .HasColumnType("datetime(6)");
 
+                    b.Property<DateTime?>("DataPrevista")
+                        .HasColumnType("datetime(6)");
+
                     b.Property<int?>("EmpresaId")
                         .HasColumnType("int");
 
@@ -341,6 +454,10 @@ namespace CrmCDL.Infrastructure.Migrations
                     b.Property<int?>("MotivoPerdaId")
                         .HasColumnType("int");
 
+                    b.Property<string>("Origem")
+                        .HasMaxLength(120)
+                        .HasColumnType("varchar(120)");
+
                     b.Property<double>("Posicao")
                         .HasColumnType("double");
 
@@ -357,6 +474,8 @@ namespace CrmCDL.Infrastructure.Migrations
                         .HasColumnType("decimal(14,2)");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("AtualizadoEm");
 
                     b.HasIndex("EmpresaId");
 
@@ -391,6 +510,46 @@ namespace CrmCDL.Infrastructure.Migrations
                     b.ToTable("LeadContatos");
                 });
 
+            modelBuilder.Entity("CrmCDL.Domain.LeadItem", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<decimal>("Desconto")
+                        .HasPrecision(5, 2)
+                        .HasColumnType("decimal(5,2)");
+
+                    b.Property<string>("Descricao")
+                        .IsRequired()
+                        .HasMaxLength(250)
+                        .HasColumnType("varchar(250)");
+
+                    b.Property<int>("LeadId")
+                        .HasColumnType("int");
+
+                    b.Property<decimal>("PrecoUnitario")
+                        .HasPrecision(14, 2)
+                        .HasColumnType("decimal(14,2)");
+
+                    b.Property<int?>("ProdutoId")
+                        .HasColumnType("int");
+
+                    b.Property<decimal>("Quantidade")
+                        .HasPrecision(12, 2)
+                        .HasColumnType("decimal(12,2)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("LeadId");
+
+                    b.HasIndex("ProdutoId");
+
+                    b.ToTable("LeadItens");
+                });
+
             modelBuilder.Entity("CrmCDL.Domain.LeadTag", b =>
                 {
                     b.Property<int>("LeadId")
@@ -404,6 +563,38 @@ namespace CrmCDL.Infrastructure.Migrations
                     b.HasIndex("TagId");
 
                     b.ToTable("LeadTags");
+                });
+
+            modelBuilder.Entity("CrmCDL.Domain.Meta", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("Ano")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Mes")
+                        .HasColumnType("int");
+
+                    b.Property<int>("QtdVendas")
+                        .HasColumnType("int");
+
+                    b.Property<int>("UsuarioId")
+                        .HasColumnType("int");
+
+                    b.Property<decimal>("Valor")
+                        .HasPrecision(14, 2)
+                        .HasColumnType("decimal(14,2)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UsuarioId", "Ano", "Mes")
+                        .IsUnique();
+
+                    b.ToTable("Metas");
                 });
 
             modelBuilder.Entity("CrmCDL.Domain.MotivoPerda", b =>
@@ -472,6 +663,44 @@ namespace CrmCDL.Infrastructure.Migrations
                     b.HasIndex("UsuarioId", "Lida", "CriadoEm");
 
                     b.ToTable("Notificacoes");
+                });
+
+            modelBuilder.Entity("CrmCDL.Domain.Produto", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<bool>("Ativo")
+                        .HasColumnType("tinyint(1)");
+
+                    b.Property<string>("Categoria")
+                        .HasMaxLength(80)
+                        .HasColumnType("varchar(80)");
+
+                    b.Property<DateTime>("CriadoEm")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<string>("Descricao")
+                        .HasMaxLength(1000)
+                        .HasColumnType("varchar(1000)");
+
+                    b.Property<string>("Nome")
+                        .IsRequired()
+                        .HasMaxLength(180)
+                        .HasColumnType("varchar(180)");
+
+                    b.Property<decimal>("Preco")
+                        .HasPrecision(14, 2)
+                        .HasColumnType("decimal(14,2)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Nome");
+
+                    b.ToTable("Produtos");
                 });
 
             modelBuilder.Entity("CrmCDL.Domain.Tag", b =>
@@ -645,6 +874,17 @@ namespace CrmCDL.Infrastructure.Migrations
                     b.Navigation("Usuario");
                 });
 
+            modelBuilder.Entity("CrmCDL.Domain.AutomacaoEtapa", b =>
+                {
+                    b.HasOne("CrmCDL.Domain.Etapa", "Etapa")
+                        .WithMany("Automacoes")
+                        .HasForeignKey("EtapaId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Etapa");
+                });
+
             modelBuilder.Entity("CrmCDL.Domain.CampoOpcao", b =>
                 {
                     b.HasOne("CrmCDL.Domain.CampoPersonalizado", "Campo")
@@ -692,6 +932,31 @@ namespace CrmCDL.Infrastructure.Migrations
                         .IsRequired();
 
                     b.Navigation("Funil");
+                });
+
+            modelBuilder.Entity("CrmCDL.Domain.FormularioCaptura", b =>
+                {
+                    b.HasOne("CrmCDL.Domain.Etapa", "Etapa")
+                        .WithMany()
+                        .HasForeignKey("EtapaId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("CrmCDL.Domain.Funil", "Funil")
+                        .WithMany()
+                        .HasForeignKey("FunilId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("CrmCDL.Domain.Usuario", "ResponsavelFixo")
+                        .WithMany()
+                        .HasForeignKey("ResponsavelFixoId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("Etapa");
+
+                    b.Navigation("Funil");
+
+                    b.Navigation("ResponsavelFixo");
                 });
 
             modelBuilder.Entity("CrmCDL.Domain.Lead", b =>
@@ -753,6 +1018,24 @@ namespace CrmCDL.Infrastructure.Migrations
                     b.Navigation("Lead");
                 });
 
+            modelBuilder.Entity("CrmCDL.Domain.LeadItem", b =>
+                {
+                    b.HasOne("CrmCDL.Domain.Lead", "Lead")
+                        .WithMany("Itens")
+                        .HasForeignKey("LeadId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("CrmCDL.Domain.Produto", "Produto")
+                        .WithMany()
+                        .HasForeignKey("ProdutoId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("Lead");
+
+                    b.Navigation("Produto");
+                });
+
             modelBuilder.Entity("CrmCDL.Domain.LeadTag", b =>
                 {
                     b.HasOne("CrmCDL.Domain.Lead", "Lead")
@@ -770,6 +1053,17 @@ namespace CrmCDL.Infrastructure.Migrations
                     b.Navigation("Lead");
 
                     b.Navigation("Tag");
+                });
+
+            modelBuilder.Entity("CrmCDL.Domain.Meta", b =>
+                {
+                    b.HasOne("CrmCDL.Domain.Usuario", "Usuario")
+                        .WithMany()
+                        .HasForeignKey("UsuarioId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Usuario");
                 });
 
             modelBuilder.Entity("CrmCDL.Domain.Notificacao", b =>
@@ -835,6 +1129,11 @@ namespace CrmCDL.Infrastructure.Migrations
                     b.Navigation("Leads");
                 });
 
+            modelBuilder.Entity("CrmCDL.Domain.Etapa", b =>
+                {
+                    b.Navigation("Automacoes");
+                });
+
             modelBuilder.Entity("CrmCDL.Domain.Funil", b =>
                 {
                     b.Navigation("Etapas");
@@ -845,6 +1144,8 @@ namespace CrmCDL.Infrastructure.Migrations
                     b.Navigation("Atividades");
 
                     b.Navigation("Contatos");
+
+                    b.Navigation("Itens");
 
                     b.Navigation("Tags");
 

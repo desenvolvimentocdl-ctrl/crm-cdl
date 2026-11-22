@@ -30,8 +30,8 @@
         <label class="campo">Responsável
             <select name="ResponsavelId"><option value="">—</option>@foreach (var u in usuarios) { <option value="@u.Id" selected="@(u.Id == Model.ResponsavelId)">@u.Nome</option> }</select>
         </label>
-        <input type="hidden" name="AceitouTermos" value="false"><label class="chk"><input type="checkbox" name="AceitouTermos" value="true" checked="@Model.AceitouTermos">Aceitou os termos de uso</label>
-        <input type="hidden" name="OptInMarketing" value="false"><label class="chk"><input type="checkbox" name="OptInMarketing" value="true" checked="@Model.OptInMarketing">Aceita receber comunicações de marketing</label>
+        <label class="chk"><input type="checkbox" name="AceitouTermos" value="true" checked="@Model.AceitouTermos">Aceitou os termos de uso</label><input type="hidden" name="AceitouTermos" value="false">
+        <label class="chk"><input type="checkbox" name="OptInMarketing" value="true" checked="@Model.OptInMarketing">Aceita receber comunicações de marketing</label><input type="hidden" name="OptInMarketing" value="false">
         @await Html.PartialAsync("_Campos", new CamposVm((List<CampoPersonalizado>)ViewBag.Campos, (Dictionary<int, string>)ViewBag.Valores))
     </form>
     <div class="pilha">@await Html.PartialAsync("_LeadsVinculados", (List<Lead>)ViewBag.Leads)</div>

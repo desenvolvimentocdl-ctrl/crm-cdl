@@ -38,6 +38,9 @@ public class Etapa
     public string Cor { get; set; } = "#99ccff";
     public int Ordem { get; set; }
     public TipoEtapa Tipo { get; set; }
+    /// <summary>Chance de fechar (0–100) de um lead nesta etapa. Usada na previsão de vendas do painel.</summary>
+    public int Probabilidade { get; set; }
+    public List<AutomacaoEtapa> Automacoes { get; set; } = new();
     public long? KommoId { get; set; }
 
     public bool Fechada => Tipo is TipoEtapa.Ganho or TipoEtapa.Perdido;
@@ -63,6 +66,11 @@ public class Lead
     public DateTime? FechadoEm { get; set; }
     /// <summary>Posição do cartão dentro da coluna (menor = mais acima).</summary>
     public double Posicao { get; set; }
+    /// <summary>Quando o vendedor espera fechar a venda (previsão do painel).</summary>
+    public DateTime? DataPrevista { get; set; }
+    /// <summary>De onde veio o lead (manual, formulário do site…).</summary>
+    public string? Origem { get; set; }
+    public List<LeadItem> Itens { get; set; } = new();
     public long? KommoId { get; set; }
 
     public List<LeadContato> Contatos { get; set; } = new();
@@ -80,6 +88,8 @@ public class Contato
     public string? Celular { get; set; }
     public string? Email { get; set; }
     public string? Cpf { get; set; }
+    /// <summary>Só os dígitos do celular e do telefone, para achar duplicados mesmo com formatação diferente.</summary>
+    public string? FoneDigitos { get; set; }
     public bool AceitouTermos { get; set; }
     public bool OptInMarketing { get; set; }
     public int? EmpresaId { get; set; }
@@ -230,4 +240,87 @@ public class ValorCampo
     public EntidadeCampo Entidade { get; set; }
     public int RegistroId { get; set; }
     public string Valor { get; set; } = "";
+}
+
+/// <summary>Produto ou serviço vendido pela CDL (associação, cursos, certificado digital, locação de espaços…).</summary>
+public class Produto
+{
+    public int Id { get; set; }
+    public string Nome { get; set; } = "";
+    public string? Categoria { get; set; }
+    public string? Descricao { get; set; }
+    public decimal Preco { get; set; }
+    public bool Ativo { get; set; } = true;
+    public DateTime CriadoEm { get; set; } = DateTime.UtcNow;
+}
+
+/// <summary>Item do lead. Quando o lead tem itens, o valor dele é a soma dos itens.</summary>
+public class LeadItem
+{
+    public int Id { get; set; }
+    public int LeadId { get; set; }
+    public Lead? Lead { get; set; }
+    public int? ProdutoId { get; set; }
+    public Produto? Produto { get; set; }
+    public string Descricao { get; set; } = "";
+    public decimal Quantidade { get; set; } = 1;
+    public decimal PrecoUnitario { get; set; }
+    /// <summary>Desconto em % (0–100).</summary>
+    public decimal Desconto { get; set; }
+
+    public decimal Total => Math.Round(Quantidade * PrecoUnitario * (1 - Desconto / 100m), 2);
+}
+
+/// <summary>Quando um lead entra na etapa, cria uma tarefa automaticamente para o responsável.</summary>
+public class AutomacaoEtapa
+{
+    public int Id { get; set; }
+    public int EtapaId { get; set; }
+    public Etapa? Etapa { get; set; }
+    public TipoTarefa TipoTarefa { get; set; }
+    public string Texto { get; set; } = "";
+    /// <summary>0 = hoje, 1 = amanhã…</summary>
+    public int PrazoDias { get; set; }
+    public int HoraPrazo { get; set; } = 9;
+    public bool Ativo { get; set; } = true;
+}
+
+public enum Distribuicao { Fixo = 0, Rodizio = 1 }
+
+/// <summary>Formulário do site (landing page) que cria leads direto no funil.</summary>
+public class FormularioCaptura
+{
+    public int Id { get; set; }
+    public string Nome { get; set; } = "";
+    /// <summary>Código secreto que vai no endereço de envio (/api/captura/{Token}).</summary>
+    public string Token { get; set; } = "";
+    public int FunilId { get; set; }
+    public Funil? Funil { get; set; }
+    public int? EtapaId { get; set; }
+    public Etapa? Etapa { get; set; }
+    public Distribuicao Distribuicao { get; set; }
+    public int? ResponsavelFixoId { get; set; }
+    public Usuario? ResponsavelFixo { get; set; }
+    /// <summary>Ids dos usuários do rodízio separados por vírgula.</summary>
+    public string ParticipantesIds { get; set; } = "";
+    public int ProximoDoRodizio { get; set; }
+    public bool Ativo { get; set; } = true;
+    public int Recebidos { get; set; }
+    public DateTime? UltimoRecebimento { get; set; }
+    public DateTime CriadoEm { get; set; } = DateTime.UtcNow;
+
+    public List<int> Participantes => ParticipantesIds.Split(',', StringSplitOptions.RemoveEmptyEntries)
+        .Select(x => int.TryParse(x, out var i) ? i : 0).Where(i => i > 0).ToList();
+}
+
+/// <summary>Meta mensal de um vendedor.</summary>
+public class Meta
+{
+    public int Id { get; set; }
+    public int UsuarioId { get; set; }
+    public Usuario? Usuario { get; set; }
+    public int Ano { get; set; }
+    public int Mes { get; set; }
+    public decimal Valor { get; set; }
+    public int QtdVendas { get; set; }
 }

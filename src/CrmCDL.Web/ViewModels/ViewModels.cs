@@ -20,6 +20,35 @@ public class LeadVm
     public List<MotivoPerda> MotivosPerda { get; set; } = new();
     public List<string> TodasTags { get; set; } = new();
     public bool PodeGerir { get; set; }
+    public List<Produto> Produtos { get; set; } = new();
+    public List<Funil> Funis { get; set; } = new();
+}
+
+public record LinhaLead(int Id, string Titulo, decimal Valor, string Funil, string Etapa, string Cor, TipoEtapa TipoEtapa,
+    string? Responsavel, string? Contato, string? Empresa, DateTime? DataPrevista, DateTime AtualizadoEm, DateTime CriadoEm,
+    DateTime? FechadoEm, DateTime? ProximaTarefa);
+
+public class ListaLeadsVm
+{
+    public List<LinhaLead> Linhas { get; set; } = new();
+    public int Total { get; set; }
+    public decimal Soma { get; set; }
+    public int Pagina { get; set; }
+    public int PorPagina { get; set; }
+    public DateTime Agora { get; set; }
+    public List<Funil> Funis { get; set; } = new();
+    public List<Etapa> Etapas { get; set; } = new();
+    public List<Usuario> Usuarios { get; set; } = new();
+    public List<string> Tags { get; set; } = new();
+    public int FunilId { get; set; }
+    public int? EtapaId { get; set; }
+    public int? ResponsavelId { get; set; }
+    public string? Situacao { get; set; }
+    public string? Busca { get; set; }
+    public string? Tag { get; set; }
+    public bool Parados { get; set; }
+    public string Ordem { get; set; } = "atualizado";
+    public bool PodeGerir { get; set; }
 }
 
 public record CamposVm(List<CampoPersonalizado> Campos, Dictionary<int, string> Valores);
@@ -40,4 +69,9 @@ public class PainelVm
     public List<(Etapa Etapa, int Qtd, decimal Valor)> PorEtapa { get; set; } = new();
     public List<(string Nome, int Abertos, int Ganhos, int Perdidos, decimal Valor, int Atrasadas)> PorResponsavel { get; set; } = new();
     public List<(string Motivo, int Qtd)> Motivos { get; set; } = new();
+    public decimal ValorPonderado { get; set; }
+    public List<(string Mes, decimal Bruto, decimal Ponderado)> Previsao { get; set; } = new();
+    public int Parados { get; set; }
+    public List<(string Nome, decimal MetaValor, decimal Realizado, int MetaQtd, int QtdRealizada)> Metas { get; set; } = new();
+    public string MesMetas { get; set; } = "";
 }

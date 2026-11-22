@@ -10,7 +10,7 @@ using Microsoft.EntityFrameworkCore;
 namespace CrmCDL.Web.Controllers;
 
 [Authorize(Policy = Politicas.Admin)]
-public class ConfiguracoesController(AppDbContext db, ConfiguracaoService config, IPasswordHasher<Usuario> hasher, IImportadorKommo kommo) : BaseController
+public class ConfiguracoesController(AppDbContext db, ConfiguracaoService config, IPasswordHasher<Usuario> hasher) : BaseController
 {
     [HttpGet("/configuracoes")]
     public IActionResult Inicio() => Redirect("/configuracoes/funis");
@@ -195,18 +195,5 @@ public class ConfiguracoesController(AppDbContext db, ConfiguracaoService config
         }
         await db.SaveChangesAsync();
         return Redirect("/configuracoes/motivos");
-    }
-
-    // ---------------- importação da Kommo ----------------
-
-    [HttpGet("/configuracoes/kommo")]
-    public IActionResult Kommo() => View(kommo.Configurado);
-
-    [HttpPost("/configuracoes/kommo")]
-    public async Task<IActionResult> ImportarKommo(CancellationToken ct)
-    {
-        var r = await kommo.ImportarEstruturaAsync(ct);
-        TempData["kommo"] = System.Text.Json.JsonSerializer.Serialize(r);
-        return Redirect("/configuracoes/kommo");
     }
 }

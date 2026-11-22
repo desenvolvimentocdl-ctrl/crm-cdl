@@ -1,0 +1,118 @@
+@model ListaLeadsVm
+@using CrmCDL.Application
+@{
+    ViewData["Title"] = "Leads";
+    var paginas = (int)Math.Ceiling(Model.Total / (double)Model.PorPagina);
+    string Url(int pagina, string? ordem = null) =>
+        $"/leads/lista?funil={Model.FunilId}&etapa={Model.EtapaId}&responsavel={Model.ResponsavelId}&situacao={Model.Situacao}" +
+        $"&busca={Uri.EscapeDataString(Model.Busca ?? "")}&tag={Uri.EscapeDataString(Model.Tag ?? "")}&parados={(Model.Parados ? "true" : "false")}" +
+        $"&ordem={ordem ?? Model.Ordem}&pagina={pagina}";
+    var hojeFim = Hora.ParaUtc(Hora.HojeLocal.AddDays(1));
+}
+<header class="topo">
+    <h1>Leads <span class="pill cinza num">@Model.Total</span></h1>
+    <span class="muted num">@Hora.Dinheiro(Model.Soma)</span>
+    <a class="btn" href="/leads@(Model.FunilId > 0 ? "?funil=" + Model.FunilId : "")">Quadro</a>
+</header>
+
+<form method="get" class="filtros barra-filtros">
+    <div class="busca"><svg><use href="#i-busca"/></svg><input type="search" name="busca" value="@Model.Busca" placeholder="Lead, contato, telefone…" aria-label="Buscar"></div>
+    <select name="funil" aria-label="Funil" onchange="this.form.etapa.value='';this.form.submit()">
+        <option value="0">Todos os funis</option>
+        @foreach (var f in Model.Funis) { <option value="@f.Id" selected="@(f.Id == Model.FunilId)">@f.Nome</option> }
+    </select>
+    <select name="etapa" aria-label="Etapa" onchange="this.form.submit()">
+        <option value="">Todas as etapas</option>
+        @foreach (var e in Model.Etapas) { <option value="@e.Id" selected="@(e.Id == Model.EtapaId)">@(Model.FunilId == 0 ? e.Funil?.Nome + " · " : "")@e.Nome</option> }
+    </select>
+    <select name="situacao" aria-label="Situação" onchange="this.form.submit()">
+        <option value="abertos" selected="@(Model.Situacao == "abertos")">Em aberto</option>
+        <option value="ganhos" selected="@(Model.Situacao == "ganhos")">Ganhos</option>
+        <option value="perdidos" selected="@(Model.Situacao == "perdidos")">Perdidos</option>
+        <option value="todos" selected="@(Model.Situacao == "todos")">Todos</option>
+    </select>
+    @if (Model.PodeGerir)
+    {
+        <select name="responsavel" aria-label="Responsável" onchange="this.form.submit()">
+            <option value="">Toda a equipe</option>
+            @foreach (var u in Model.Usuarios) { <option value="@u.Id" selected="@(u.Id == Model.ResponsavelId)">@u.Nome</option> }
+        </select>
+    }
+    <select name="tag" aria-label="Tag" onchange="this.form.submit()">
+        <option value="">Qualquer tag</option>
+        @foreach (var t in Model.Tags) { <option selected="@(t == Model.Tag)">@t</option> }
+    </select>
+    <label class="chk"><input type="checkbox" name="parados" value="true" checked="@Model.Parados" onchange="this.form.submit()"> Parados há @Consultas.DiasParado+ dias</label>
+    <input type="hidden" name="ordem" value="@Model.Ordem">
+    <a class="btn ghost sm" href="/leads/lista">Limpar</a>
+</form>
+
+<div class="pagina" style="max-width:none">
+    <form method="post" asp-antiforgery="true" action="/leads/em-massa" id="form-massa">
+        <div class="barra-massa" hidden>
+            <b><span data-sel-qtd>0</span> selecionado(s)</b>
+            @if (Model.PodeGerir)
+            {
+                <select data-massa-resp aria-label="Novo responsável"><option value="">Passar para…</option>@foreach (var u in Model.Usuarios) { <option value="@u.Id">@u.Nome</option> }</select>
+            }
+            @if (Model.FunilId > 0)
+            {
+                <select data-massa-etapa aria-label="Mover para etapa"><option value="">Mover para…</option>@foreach (var e in Model.Etapas.Where(e => e.Tipo != TipoEtapa.Perdido)) { <option value="@e.Id">@e.Nome</option> }</select>
+            }
+            <input data-massa-tag placeholder="Adicionar tag" list="tags-massa" style="width:150px"><datalist id="tags-massa">@foreach (var t in Model.Tags) { <option value="@t"></option> }</datalist>
+            <button type="button" class="btn sm" data-massa-tag-ok>Aplicar tag</button>
+            @if (Model.PodeGerir) { <button type="button" class="btn sm perigo" data-massa-excluir>Excluir</button> }
+            <input type="hidden" name="acao"><input type="hidden" name="valorId"><input type="hidden" name="texto">
+        </div>
+        <div class="card rolavel" style="overflow:auto">
+            @if (Model.Linhas.Count == 0) { <div class="vazio">Nenhum lead com esses filtros.</div> }
+            else
+            {
+                <table class="tabela">
+                    <thead><tr>
+                        <th style="width:34px"><input type="checkbox" data-sel-todos aria-label="Selecionar todos"></th>
+                        <th><a href="@Url(1, "nome")">Lead</a></th>
+                        <th>Etapa</th>
+                        <th class="ocultar-cel">Contato / empresa</th>
+                        <th><a href="@Url(1, "valor")">Valor</a></th>
+                        <th class="ocultar-cel">Responsável</th>
+                        <th class="ocultar-cel">Próxima tarefa</th>
+                        <th class="ocultar-cel"><a href="@Url(1, "previsao")">Previsão</a></th>
+                        <th class="ocultar-cel"><a href="@Url(1, "parado")">Última movimentação</a></th>
+                    </tr></thead>
+                    <tbody>
+                    @foreach (var l in Model.Linhas)
+                    {
+                        var parado = l.FechadoEm is null && l.AtualizadoEm < Model.Agora.AddDays(-Consultas.DiasParado);
+                        <tr data-href="/leads/@l.Id">
+                            <td><input type="checkbox" name="ids" value="@l.Id" data-sel aria-label="Selecionar @l.Titulo"></td>
+                            <td><a class="nome" href="/leads/@l.Id">@l.Titulo</a>@if (Model.FunilId == 0) { <small class="muted">@l.Funil</small> }</td>
+                            <td><span class="linha" style="gap:6px;flex-wrap:nowrap"><span class="ponto" style="background:@l.Cor"></span>@l.Etapa</span></td>
+                            <td class="ocultar-cel">@l.Contato@if (l.Empresa is not null) { <small class="muted" style="display:block">@l.Empresa</small> }</td>
+                            <td class="num">@Hora.Dinheiro(l.Valor)</td>
+                            <td class="ocultar-cel">@l.Responsavel</td>
+                            <td class="ocultar-cel">
+                                @if (l.ProximaTarefa is DateTime p)
+                                {
+                                    <span class="c-prazo @(p < Model.Agora ? "atrasada" : p < hojeFim ? "hoje" : "")">@Hora.Prazo(p)</span>
+                                }
+                                else if (l.FechadoEm is null) { <span class="c-prazo sem">Sem tarefa</span> }
+                            </td>
+                            <td class="ocultar-cel num">@l.DataPrevista?.ToString("dd/MM/yyyy")</td>
+                            <td class="ocultar-cel">@Hora.Relativa(l.AtualizadoEm) @if (parado) { <span class="pill alerta">parado</span> }</td>
+                        </tr>
+                    }
+                    </tbody>
+                </table>
+            }
+        </div>
+    </form>
+    @if (paginas > 1)
+    {
+        <nav class="paginacao" aria-label="Paginação">
+            @if (Model.Pagina > 1) { <a class="btn sm" href="@Url(Model.Pagina - 1)">Anterior</a> }
+            <span>Página @Model.Pagina de @paginas</span>
+            @if (Model.Pagina < paginas) { <a class="btn sm" href="@Url(Model.Pagina + 1)">Próxima</a> }
+        </nav>
+    }
+</div>

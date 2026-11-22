@@ -3,7 +3,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace CrmCDL.Application;
 
-public record EtapaEdicao(int? Id, string Nome, string Cor);
+public record EtapaEdicao(int? Id, string Nome, string Cor, int Probabilidade = 0);
 
 /// <summary>Cadastro de funis, etapas e campos personalizados.</summary>
 public class ConfiguracaoService(IAppDbContext db)
@@ -18,9 +18,9 @@ public class ConfiguracaoService(IAppDbContext db)
             Etapas =
             {
                 new Etapa { Nome = "Leads de entrada", Cor = "#c1c1c1", Ordem = 0, Tipo = TipoEtapa.Entrada },
-                new Etapa { Nome = "Contato inicial", Cor = "#99ccff", Ordem = 1 },
-                new Etapa { Nome = "Negociação", Cor = "#ffcc66", Ordem = 2 },
-                new Etapa { Nome = "Venda ganha", Cor = "#ccff66", Ordem = 98, Tipo = TipoEtapa.Ganho },
+                new Etapa { Nome = "Contato inicial", Cor = "#99ccff", Ordem = 1, Probabilidade = 20 },
+                new Etapa { Nome = "Negociação", Cor = "#ffcc66", Ordem = 2, Probabilidade = 60 },
+                new Etapa { Nome = "Venda ganha", Cor = "#ccff66", Ordem = 98, Tipo = TipoEtapa.Ganho, Probabilidade = 100 },
                 new Etapa { Nome = "Venda perdida", Cor = "#d5d8db", Ordem = 99, Tipo = TipoEtapa.Perdido },
             }
         };
@@ -69,6 +69,7 @@ public class ConfiguracaoService(IAppDbContext db)
             }
             etapa.Nome = e.Nome.Trim();
             etapa.Cor = CorValida(e.Cor);
+            etapa.Probabilidade = Math.Clamp(e.Probabilidade, 0, 100);
             etapa.Ordem = ordem++;
         }
         var ganho = funil.Etapas.FirstOrDefault(e => e.Tipo == TipoEtapa.Ganho);

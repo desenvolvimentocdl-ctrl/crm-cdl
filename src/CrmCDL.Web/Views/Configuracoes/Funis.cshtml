@@ -4,9 +4,11 @@
 <div class="pagina" style="max-width:960px">
     <div class="linha" style="justify-content:space-between;margin-bottom:14px">
         <p class="muted" style="margin:0">A ordem aqui é a ordem do seletor de funis no quadro.</p>
+        <form method="post" asp-antiforgery="true" action="/configuracoes/funis/modelo"><button class="btn" title="Cria um funil comercial com etapas, probabilidades e tarefas automáticas">Usar modelo pronto</button></form>
         <form method="post" asp-antiforgery="true" action="/configuracoes/funis/novo" class="linha"><input name="nome" placeholder="Nome do novo funil" required style="width:240px"><button class="btn pri"><svg><use href="#i-mais"/></svg>Criar funil</button></form>
     </div>
     <div class="card">
+        @if (Model.Count == 0) { <div class="vazio">Nenhum funil ainda. Use o <b>modelo pronto</b> ou crie um funil do zero.</div> }
         @foreach (var f in Model)
         {
             <div class="funil-linha" style="@(f.Ativo ? "" : "opacity:.55")">

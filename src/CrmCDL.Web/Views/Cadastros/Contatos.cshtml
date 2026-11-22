@@ -42,7 +42,8 @@
         <div class="modal-cab"><h2>Novo contato</h2><button type="button" class="ico-btn" data-fecha aria-label="Fechar"><svg><use href="#i-x"/></svg></button></div>
         <div class="modal-corpo">
             <label class="campo">Nome *<input name="nome" required></label>
-            <div class="grid2"><label class="campo">Celular / WhatsApp<input name="celular"></label><label class="campo">E-mail<input name="email" type="email"></label></div>
+            <div class="grid2"><label class="campo">Celular / WhatsApp<input name="celular" data-dup="fone"></label><label class="campo">E-mail<input name="email" type="email" data-dup="email"></label></div>
+            <div class="aviso-dup" hidden></div>
             <label class="campo">Empresa<input name="empresa"></label>
         </div>
         <div class="modal-pe"><button type="button" class="btn" data-fecha>Cancelar</button><button class="btn pri">Criar</button></div>

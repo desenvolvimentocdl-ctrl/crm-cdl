@@ -18,7 +18,8 @@
         </div>
 
         <h3 style="margin-top:8px">Etapas</h3>
-        <p class="muted" style="margin:-6px 0 0;font-size:12px">Arraste pela alça para reordenar. Etapas com leads não podem ser excluídas.</p>
+        <p class="muted" style="margin:-6px 0 0;font-size:12px">Arraste pela alça para reordenar. O % é a chance de fechar nessa etapa, usada na previsão de vendas. Etapas com leads não podem ser excluídas.
+            <a href="/configuracoes/automacoes?funil=@Model.Id">Configurar tarefas automáticas →</a></p>
         <div class="editor-etapas">
             @if (entrada is not null)
             {
@@ -32,6 +33,7 @@
                         <input type="hidden" data-campo="Id" value="@e.Id">
                         <input type="color" data-campo="Cor" value="@e.Cor" aria-label="Cor">
                         <input type="text" data-campo="Nome" value="@e.Nome" required aria-label="Nome da etapa">
+                        <label class="prob" title="Chance de fechar a venda nesta etapa (previsão do painel)"><input type="number" data-campo="Probabilidade" value="@e.Probabilidade" min="0" max="100" aria-label="Probabilidade (%)">%</label>
                         <span class="qtd">@Qtd(e) leads</span>
                         <button type="button" class="ico-btn" data-remove-etapa="@Qtd(e)" aria-label="Remover etapa"><svg><use href="#i-x"/></svg></button>
                     </div>
@@ -59,6 +61,7 @@
         <input type="hidden" data-campo="Id" value="">
         <input type="color" data-campo="Cor" value="#99ccff" aria-label="Cor">
         <input type="text" data-campo="Nome" value="" required placeholder="Nome da etapa" aria-label="Nome da etapa">
+        <label class="prob" title="Chance de fechar a venda nesta etapa (previsão do painel)"><input type="number" data-campo="Probabilidade" value="0" min="0" max="100" aria-label="Probabilidade (%)">%</label>
         <span class="qtd">nova</span>
         <button type="button" class="ico-btn" data-remove-etapa="0" aria-label="Remover etapa"><svg><use href="#i-x"/></svg></button>
     </div>

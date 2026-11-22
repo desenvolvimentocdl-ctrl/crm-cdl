@@ -1,0 +1,83 @@
+@model List<FormularioCaptura>
+@{
+    ViewData["Title"] = "Formulários do site";
+    var funis = (List<Funil>)ViewBag.Funis;
+    var usuarios = (List<Usuario>)ViewBag.Usuarios;
+    string baseUrl = ViewBag.Base;
+}
+@await Html.PartialAsync("~/Views/Configuracoes/_Abas.cshtml", "formularios")
+<div class="pagina pilha" style="max-width:1000px">
+    <p class="muted" style="margin:0">Cada formulário das landing pages do site ganha um endereço próprio. Quando alguém envia, o lead cai direto no funil,
+        já com o responsável definido (fixo ou em rodízio) e com as tarefas automáticas da etapa. Contato que já existe (mesmo telefone ou e-mail) é reaproveitado.</p>
+
+    @foreach (var f in Model.Append(null))
+    {
+        var novo = f is null;
+        var participantes = f?.Participantes ?? new List<int>();
+        <details class="secao" open="@(novo && Model.Count == 0)">
+            <summary class="linha" style="cursor:pointer;list-style:none">
+                @if (novo) { <b>+ Novo formulário</b> }
+                else
+                {
+                    <b>@f!.Nome</b>
+                    <span class="pill @(f.Ativo ? "ok" : "cinza")">@(f.Ativo ? "Ativo" : "Desativado")</span>
+                    <span class="muted">@f.Funil?.Nome · @(f.Distribuicao == Distribuicao.Rodizio ? $"rodízio entre {participantes.Count}" : f.ResponsavelFixo?.Nome ?? "sem responsável")</span>
+                    <span class="muted" style="margin-left:auto">@f.Recebidos recebido(s)@(f.UltimoRecebimento is DateTime u ? " · último " + Hora.Relativa(u) : "")</span>
+                }
+            </summary>
+            <form method="post" asp-antiforgery="true" action="/configuracoes/formularios" class="pilha" style="margin-top:14px">
+                <input type="hidden" name="id" value="@f?.Id">
+                <div class="grid2">
+                    <label class="campo">Nome<input name="nome" value="@f?.Nome" required placeholder="Ex.: Landing page – Associe-se"></label>
+                    <label class="campo">Funil e etapa de entrada
+                        <select name="etapaId" data-funil-etapa required>
+                            @foreach (var fu in funis)
+                            {
+                                <optgroup label="@fu.Nome">@foreach (var e in fu.Etapas.Where(e => !e.Fechada).OrderBy(e => e.Ordem)) { <option value="@e.Id" data-funil="@fu.Id" selected="@(f?.EtapaId == e.Id)">@e.Nome</option> }</optgroup>
+                            }
+                        </select>
+                    </label>
+                </div>
+                <div class="grid2">
+                    <label class="campo">Quem recebe os leads
+                        <select name="distribuicao" data-distribuicao>
+                            <option value="Fixo" selected="@(f?.Distribuicao != Distribuicao.Rodizio)">Sempre a mesma pessoa</option>
+                            <option value="Rodizio" selected="@(f?.Distribuicao == Distribuicao.Rodizio)">Rodízio entre a equipe</option>
+                        </select>
+                    </label>
+                    <label class="campo" data-so="Fixo">Responsável
+                        <select name="responsavelFixoId"><option value="">— ninguém —</option>@foreach (var u in usuarios) { <option value="@u.Id" selected="@(u.Id == f?.ResponsavelFixoId)">@u.Nome</option> }</select>
+                    </label>
+                </div>
+                <div class="campo" data-so="Rodizio" style="font-size:12px;font-weight:600;color:var(--muted)">Participantes do rodízio
+                    <div class="multi">@foreach (var u in usuarios) { <label><input type="checkbox" name="participantes" value="@u.Id" checked="@participantes.Contains(u.Id)">@u.Nome</label> }</div>
+                </div>
+                <div class="linha">
+                    <label class="chk"><input type="checkbox" name="ativo" value="true" checked="@(f?.Ativo ?? true)">Ativo</label><input type="hidden" name="ativo" value="false">
+                    <button class="btn pri sm">Salvar</button>
+                    @if (!novo) { <button class="btn sm" name="novoToken" value="true" onclick="return confirm('Gerar um novo endereço? O antigo para de funcionar.')">Gerar novo endereço</button> }
+                </div>
+            </form>
+            @if (!novo)
+            {
+                var url = $"{baseUrl}/api/captura/{f!.Token}";
+                <div class="codigo-bloco">
+                    <div class="linha" style="justify-content:space-between"><b>Endereço de envio</b><button type="button" class="btn sm" data-copiar="@url">Copiar</button></div>
+                    <code>@url</code>
+                    <b style="margin-top:10px;display:block">Exemplo de formulário para colar na página</b>
+                    <pre>&lt;form action="@url" method="post"&gt;
+  &lt;input name="nome" placeholder="Seu nome" required&gt;
+  &lt;input name="email" type="email" placeholder="E-mail"&gt;
+  &lt;input name="telefone" placeholder="WhatsApp"&gt;
+  &lt;input name="empresa" placeholder="Empresa"&gt;
+  &lt;textarea name="mensagem"&gt;&lt;/textarea&gt;
+  &lt;input name="_gotcha" style="display:none"&gt;  &lt;!-- anti-spam --&gt;
+  &lt;input type="hidden" name="_redirect" value="https://cdludi.org.br/obrigado"&gt;
+  &lt;button&gt;Enviar&lt;/button&gt;
+&lt;/form&gt;</pre>
+                    <small class="muted">Também aceita JSON. Campos com o mesmo nome de um campo personalizado do lead (ex.: <code>utm_source</code>) são preenchidos sozinhos. Todos os campos enviados aparecem no histórico do lead.</small>
+                </div>
+            }
+        </details>
+    }
+</div>

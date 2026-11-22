@@ -24,7 +24,7 @@
                         <div class="nome"><span class="av sm">@Texto.Iniciais(u.Nome)</span><input form="u@(u.Id)" name="nome" value="@u.Nome" style="max-width:220px"></div>
                         <small class="muted" style="margin-left:32px">@u.Email</small></td>
                     <td><select form="u@(u.Id)" name="perfil">@foreach (var p in Enum.GetValues<Perfil>()) { <option value="@p" selected="@(p == u.Perfil)">@Texto.NomePerfil(p)</option> }</select></td>
-                    <td><input form="u@(u.Id)" type="hidden" name="ativo" value="false"><input form="u@(u.Id)" type="checkbox" name="ativo" value="true" checked="@u.Ativo" aria-label="Ativo"></td>
+                    <td><input form="u@(u.Id)" type="checkbox" name="ativo" value="true" checked="@u.Ativo" aria-label="Ativo"><input form="u@(u.Id)" type="hidden" name="ativo" value="false"></td>
                     <td><input form="u@(u.Id)" name="novaSenha" placeholder="Deixe vazio para manter" autocomplete="off"></td>
                     <td><button form="u@(u.Id)" class="btn sm">Salvar</button></td>
                 </tr>

@@ -19,7 +19,16 @@
         @if (l.Etapa.Tipo == TipoEtapa.Perdido) { <span class="pill erro">Perdido@(l.MotivoPerda is null ? "" : " · " + l.MotivoPerda.Nome)</span> }
         <span style="margin-left:auto" class="num">@Hora.Dinheiro(l.Valor)</span>
     </div>
-    <div class="meta">@l.Funil!.Nome · criado @Hora.Relativa(l.CriadoEm) · atualizado @Hora.Relativa(l.AtualizadoEm) · #@l.Id</div>
+    <div class="meta">
+        <button type="button" class="link-btn" data-abre="#mover-funil" title="Levar para outro funil">@l.Funil!.Nome ▾</button>
+        · criado @Hora.Relativa(l.CriadoEm) · última movimentação @Hora.Relativa(l.AtualizadoEm)
+        @if (l.Origem is not null) { <text>· origem: @l.Origem</text> }
+        · #@l.Id
+        @if (l.FechadoEm is null && l.AtualizadoEm < DateTime.UtcNow.AddDays(-CrmCDL.Application.Consultas.DiasParado))
+        {
+            <span class="pill alerta">parado há @((int)(DateTime.UtcNow - l.AtualizadoEm).TotalDays) dias</span>
+        }
+    </div>
     <div class="etapas-barra" role="list" aria-label="Etapas do funil">
         @for (var i = 0; i < Model.Etapas.Count; i++)
         {
@@ -43,7 +52,8 @@
             <h3>Dados do lead <button class="btn pri sm">Salvar</button></h3>
             <label class="campo">Nome do lead<input name="titulo" value="@l.Titulo" required></label>
             <div class="grid2">
-                <label class="campo">Valor (R$)<input name="valor" type="number" min="0" step="0.01" value="@l.Valor.ToString(System.Globalization.CultureInfo.InvariantCulture)"></label>
+                <label class="campo">Valor (R$)@if (l.Itens.Count > 0) { <small class="muted">soma dos produtos</small> }
+                    <input name="valor" type="number" min="0" step="0.01" value="@l.Valor.ToString(System.Globalization.CultureInfo.InvariantCulture)" readonly="@(l.Itens.Count > 0)"></label>
                 <label class="campo">Responsável
                     @if (Model.PodeGerir)
                     {
@@ -58,12 +68,42 @@
                     }
                 </label>
             </div>
+            <label class="campo">Previsão de fechamento<input name="dataPrevista" type="date" value="@l.DataPrevista?.ToString("yyyy-MM-dd")"></label>
             <label class="campo">Tags (separadas por vírgula)
                 <input name="tags" value="@string.Join(", ", l.Tags.Select(t => t.Tag!.Nome))" list="lista-tags" placeholder="ex.: associado, evento">
                 <datalist id="lista-tags">@foreach (var t in Model.TodasTags) { <option value="@t"></option> }</datalist>
             </label>
             @await Html.PartialAsync("_Campos", new CamposVm(Model.Campos, Model.Valores))
         </form>
+
+        <section class="secao" id="produtos">
+            <h3>Produtos e serviços <span class="num" style="text-transform:none;letter-spacing:0;color:var(--ink)">@Hora.Dinheiro(l.Itens.Sum(i => i.Total))</span></h3>
+            @if (l.Itens.Count == 0) { <p class="muted" style="margin:0 0 10px">Nenhum produto. Com produtos, o valor do lead é calculado sozinho.</p> }
+            @foreach (var i in l.Itens.OrderBy(i => i.Id))
+            {
+                <div class="vinculo">
+                    <div class="info"><b>@i.Descricao</b><small>@i.Quantidade.ToString("0.##") × @Hora.Dinheiro(i.PrecoUnitario)@(i.Desconto > 0 ? $" · −{i.Desconto:0.##}%" : "")</small></div>
+                    <span class="num">@i.Total.ToString("C2", Hora.PtBr)</span>
+                    <form method="post" asp-antiforgery="true" action="/leads/@l.Id/itens/@i.Id/remover"><button class="ico-btn" aria-label="Remover produto"><svg><use href="#i-x"/></svg></button></form>
+                </div>
+            }
+            <form method="post" asp-antiforgery="true" action="/leads/@l.Id/itens" class="pilha item-novo" style="gap:8px;margin-top:10px">
+                <select name="produtoId" data-produto>
+                    <option value="">Item avulso (descreva abaixo)</option>
+                    @foreach (var g in Model.Produtos.GroupBy(p => p.Categoria ?? "Outros"))
+                    {
+                        <optgroup label="@g.Key">@foreach (var p in g) { <option value="@p.Id" data-preco="@p.Preco.ToString(System.Globalization.CultureInfo.InvariantCulture)">@p.Nome — @Hora.Dinheiro(p.Preco)</option> }</optgroup>
+                    }
+                </select>
+                <input name="descricao" placeholder="Descrição (opcional se escolheu um produto)">
+                <div class="linha" style="flex-wrap:nowrap">
+                    <label class="campo" style="flex:1">Qtd<input name="quantidade" type="number" min="0.01" step="0.01" value="1"></label>
+                    <label class="campo" style="flex:1.4">Preço un.<input name="preco" type="number" min="0" step="0.01" placeholder="do produto"></label>
+                    <label class="campo" style="flex:1">Desc. %<input name="desconto" type="number" min="0" max="100" step="0.01" value="0"></label>
+                </div>
+                <button class="btn sm"><svg><use href="#i-mais"/></svg>Adicionar produto</button>
+            </form>
+        </section>
 
         <section class="secao">
             <h3>Contatos <button class="ico-btn" type="button" data-abre="#vincular-contato" title="Adicionar contato" aria-label="Adicionar contato"><svg><use href="#i-mais"/></svg></button></h3>
@@ -168,6 +208,24 @@
         </ol>
     </section>
 </div>
+
+<dialog id="mover-funil">
+    <form method="post" asp-antiforgery="true" action="/leads/@l.Id/funil">
+        <div class="modal-cab"><h2>Mover para outro funil</h2><button type="button" class="ico-btn" data-fecha aria-label="Fechar"><svg><use href="#i-x"/></svg></button></div>
+        <div class="modal-corpo">
+            <label class="campo">Funil e etapa de destino
+                <select name="etapaId" data-funil-etapa required>
+                    @foreach (var f in Model.Funis.Where(f => f.Id != l.FunilId))
+                    {
+                        <optgroup label="@f.Nome">@foreach (var e in f.Etapas.OrderBy(e => e.Ordem)) { <option value="@e.Id" data-funil="@f.Id">@e.Nome</option> }</optgroup>
+                    }
+                </select>
+            </label>
+            <p class="muted" style="margin:0;font-size:12px">O histórico, os contatos e as tarefas vão junto.</p>
+        </div>
+        <div class="modal-pe"><button type="button" class="btn" data-fecha>Cancelar</button><button class="btn pri">Mover</button></div>
+    </form>
+</dialog>
 
 <dialog id="vincular-contato">
     <form method="post" asp-antiforgery="true" action="/leads/@l.Id/contatos" data-autocompleta="contatos">

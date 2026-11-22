@@ -22,6 +22,33 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<CampoOpcao> CampoOpcoes => Set<CampoOpcao>();
     public DbSet<ValorCampo> ValoresCampo => Set<ValorCampo>();
     public DbSet<Notificacao> Notificacoes => Set<Notificacao>();
+    public DbSet<Produto> Produtos => Set<Produto>();
+    public DbSet<LeadItem> LeadItens => Set<LeadItem>();
+    public DbSet<AutomacaoEtapa> Automacoes => Set<AutomacaoEtapa>();
+    public DbSet<FormularioCaptura> Formularios => Set<FormularioCaptura>();
+    public DbSet<Meta> Metas => Set<Meta>();
+
+    public override Task<int> SaveChangesAsync(CancellationToken ct = default)
+    {
+        AntesDeSalvar();
+        return base.SaveChangesAsync(ct);
+    }
+
+    public override int SaveChanges()
+    {
+        AntesDeSalvar();
+        return base.SaveChanges();
+    }
+
+    /// <summary>Mantém os dígitos do telefone do contato atualizados para a busca de duplicados.</summary>
+    void AntesDeSalvar()
+    {
+        foreach (var e in ChangeTracker.Entries<Contato>().Where(e => e.State is EntityState.Added or EntityState.Modified))
+        {
+            var d = string.Join(" ", new[] { e.Entity.Celular, e.Entity.Telefone }.Select(Consultas.Digitos).Where(x => x != ""));
+            e.Entity.FoneDigitos = d == "" ? null : d;
+        }
+    }
 
     protected override void OnModelCreating(ModelBuilder b)
     {
@@ -60,6 +87,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             e.HasIndex(x => new { x.FunilId, x.EtapaId, x.Posicao });
             e.HasIndex(x => x.ResponsavelId);
             e.HasIndex(x => x.KommoId);
+            e.Property(x => x.Origem).HasMaxLength(120);
+            e.HasIndex(x => x.AtualizadoEm);
         });
 
         b.Entity<Contato>(e =>
@@ -70,6 +99,9 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             e.Property(x => x.Celular).HasMaxLength(40);
             e.Property(x => x.Email).HasMaxLength(180);
             e.Property(x => x.Cpf).HasMaxLength(20);
+            e.Property(x => x.FoneDigitos).HasMaxLength(60);
+            e.HasIndex(x => x.FoneDigitos);
+            e.HasIndex(x => x.Email);
             e.HasOne(x => x.Empresa).WithMany(x => x.Contatos).HasForeignKey(x => x.EmpresaId).OnDelete(DeleteBehavior.SetNull);
             e.HasOne(x => x.Responsavel).WithMany().HasForeignKey(x => x.ResponsavelId).OnDelete(DeleteBehavior.SetNull);
             e.HasIndex(x => x.Nome);
@@ -158,6 +190,50 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             e.HasOne(x => x.Lead).WithMany().HasForeignKey(x => x.LeadId).OnDelete(DeleteBehavior.Cascade);
             e.HasIndex(x => new { x.UsuarioId, x.Lida, x.CriadoEm });
             e.HasIndex(x => new { x.UsuarioId, x.Chave }).IsUnique();
+        });
+            b.Entity<Produto>(e =>
+        {
+            e.Property(x => x.Nome).HasMaxLength(180);
+            e.Property(x => x.Categoria).HasMaxLength(80);
+            e.Property(x => x.Descricao).HasMaxLength(1000);
+            e.Property(x => x.Preco).HasPrecision(14, 2);
+            e.HasIndex(x => x.Nome);
+        });
+
+        b.Entity<LeadItem>(e =>
+        {
+            e.Property(x => x.Descricao).HasMaxLength(250);
+            e.Property(x => x.Quantidade).HasPrecision(12, 2);
+            e.Property(x => x.PrecoUnitario).HasPrecision(14, 2);
+            e.Property(x => x.Desconto).HasPrecision(5, 2);
+            e.Ignore(x => x.Total);
+            e.HasOne(x => x.Lead).WithMany(x => x.Itens).HasForeignKey(x => x.LeadId).OnDelete(DeleteBehavior.Cascade);
+            e.HasOne(x => x.Produto).WithMany().HasForeignKey(x => x.ProdutoId).OnDelete(DeleteBehavior.SetNull);
+        });
+
+        b.Entity<AutomacaoEtapa>(e =>
+        {
+            e.Property(x => x.Texto).HasMaxLength(500);
+            e.HasOne(x => x.Etapa).WithMany(x => x.Automacoes).HasForeignKey(x => x.EtapaId).OnDelete(DeleteBehavior.Cascade);
+        });
+
+        b.Entity<FormularioCaptura>(e =>
+        {
+            e.Property(x => x.Nome).HasMaxLength(120);
+            e.Property(x => x.Token).HasMaxLength(64);
+            e.Property(x => x.ParticipantesIds).HasMaxLength(500);
+            e.Ignore(x => x.Participantes);
+            e.HasIndex(x => x.Token).IsUnique();
+            e.HasOne(x => x.Funil).WithMany().HasForeignKey(x => x.FunilId).OnDelete(DeleteBehavior.Cascade);
+            e.HasOne(x => x.Etapa).WithMany().HasForeignKey(x => x.EtapaId).OnDelete(DeleteBehavior.SetNull);
+            e.HasOne(x => x.ResponsavelFixo).WithMany().HasForeignKey(x => x.ResponsavelFixoId).OnDelete(DeleteBehavior.SetNull);
+        });
+
+        b.Entity<Meta>(e =>
+        {
+            e.Property(x => x.Valor).HasPrecision(14, 2);
+            e.HasOne(x => x.Usuario).WithMany().HasForeignKey(x => x.UsuarioId).OnDelete(DeleteBehavior.Cascade);
+            e.HasIndex(x => new { x.UsuarioId, x.Ano, x.Mes }).IsUnique();
         });
     }
 }

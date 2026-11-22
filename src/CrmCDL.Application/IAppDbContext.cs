@@ -21,6 +21,11 @@ public interface IAppDbContext
     DbSet<CampoOpcao> CampoOpcoes { get; }
     DbSet<ValorCampo> ValoresCampo { get; }
     DbSet<Notificacao> Notificacoes { get; }
+    DbSet<Produto> Produtos { get; }
+    DbSet<LeadItem> LeadItens { get; }
+    DbSet<AutomacaoEtapa> Automacoes { get; }
+    DbSet<FormularioCaptura> Formularios { get; }
+    DbSet<Meta> Metas { get; }
     Task<int> SaveChangesAsync(CancellationToken ct = default);
 }
 

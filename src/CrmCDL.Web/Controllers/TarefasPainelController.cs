@@ -98,6 +98,31 @@ public class TarefasPainelController(AppDbContext db, LeadService leads) : BaseC
                 .GroupBy(l => l.MotivoPerda != null ? l.MotivoPerda.Nome : "Sem motivo informado")
                 .Select(g => new { g.Key, Qtd = g.Count() }).OrderByDescending(x => x.Qtd).ToListAsync())
             .Select(x => (x.Key, x.Qtd)).ToList();
+
+        // Previsão: valor em aberto × chance da etapa, agrupado pelo mês previsto de fechamento.
+        var abertos = await doFunil.Where(l => l.FechadoEm == null)
+            .Select(l => new { l.Valor, l.DataPrevista, Prob = l.Etapa!.Probabilidade }).ToListAsync();
+        vm.ValorPonderado = abertos.Sum(a => a.Valor * a.Prob / 100m);
+        var mesAtual = new DateTime(Hora.HojeLocal.Year, Hora.HojeLocal.Month, 1);
+        vm.Previsao = Enumerable.Range(0, 3).Select(i => mesAtual.AddMonths(i))
+            .Select(m => (m.ToString("MMM/yy", Hora.PtBr),
+                abertos.Where(a => a.DataPrevista is DateTime d && d.Year == m.Year && d.Month == m.Month).Sum(a => a.Valor),
+                abertos.Where(a => a.DataPrevista is DateTime d && d.Year == m.Year && d.Month == m.Month).Sum(a => a.Valor * a.Prob / 100m)))
+            .Append(("Sem data", abertos.Where(a => a.DataPrevista is null).Sum(a => a.Valor), abertos.Where(a => a.DataPrevista is null).Sum(a => a.Valor * a.Prob / 100m)))
+            .ToList();
+        var limiteParado = DateTime.UtcNow.AddDays(-Consultas.DiasParado);
+        vm.Parados = await doFunil.CountAsync(l => l.FechadoEm == null && l.AtualizadoEm < limiteParado);
+
+        // Metas do mês atual (todas as vendas ganhas no mês, em qualquer funil).
+        var iniMes = Hora.ParaUtc(mesAtual);
+        var fimMes = Hora.ParaUtc(mesAtual.AddMonths(1));
+        var metas = await db.Metas.Include(m => m.Usuario).Where(m => m.Ano == mesAtual.Year && m.Mes == mesAtual.Month).ToListAsync();
+        var ganhosMes = await db.Leads.Where(l => l.FechadoEm >= iniMes && l.FechadoEm < fimMes && l.Etapa!.Tipo == TipoEtapa.Ganho)
+            .GroupBy(l => l.ResponsavelId).Select(g => new { g.Key, Qtd = g.Count(), Valor = g.Sum(l => l.Valor) }).ToListAsync();
+        vm.Metas = metas.OrderBy(m => m.Usuario!.Nome).Select(m => (m.Usuario!.Nome, m.Valor,
+            ganhosMes.FirstOrDefault(g => g.Key == m.UsuarioId)?.Valor ?? 0m, m.QtdVendas,
+            ganhosMes.FirstOrDefault(g => g.Key == m.UsuarioId)?.Qtd ?? 0)).ToList();
+        vm.MesMetas = mesAtual.ToString("MMMM", Hora.PtBr);
         return View(vm);
     }
 }
